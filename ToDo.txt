@@ -1,0 +1,9 @@
+- wyliczanie msaa i zobienie listy tych trybów, które karta obsługuje
+- filter neares/linear
+- InputClass
+- lista trybów (lista obsługiwanych rozdzielczości)
+- klawisze + i - zwiększają/zmiejszają rozdzielczość
+- wyświetlanie klatek na sekundę
+- vsync prawdziwy
+
+
