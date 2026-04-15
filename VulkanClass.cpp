@@ -36,7 +36,6 @@ VulkanClass::VulkanClass() {
     descriptorPool = VK_NULL_HANDLE;
     descriptorSet = VK_NULL_HANDLE;
     commandPool = VK_NULL_HANDLE;
-    msaaSamples = SETTINGS.MSAA_SAMPLES;
 
 }
 
@@ -50,6 +49,7 @@ void VulkanClass::Initialize(GLFWwindow *window) {
     SetupDebugMessenger();
     CreateSurface(window);
     PickPhysicalDevice();
+    CreateSupportedSampleCounts(physicalDevice);
     CreateLogicalDevice();
     CreateSwapChain(window);
     CreateImageViews();
@@ -243,15 +243,18 @@ void VulkanClass::SetResolution(uint32_t width, uint32_t height) {
     SETTINGS.WIDTH = width;
     SETTINGS.HEIGHT = height;
 
-    vkDeviceWaitIdle(device);
-
     RecreatePipeline();
 
 }
 
 void VulkanClass::SetMSAA(VkSampleCountFlagBits msaa) {
 
-    msaaSamples = msaa;
+    if (std::find(msaaSamples.begin(), msaaSamples.end(), msaa) == msaaSamples.end()) {
+        throw std::runtime_error("MSAA " + std::to_string(msaa) + "x does not supported!");
+    }
+
+    SETTINGS.MSAA_SAMPLES = msaa;
+
     RecreatePipeline();
 
 }
@@ -469,6 +472,27 @@ bool VulkanClass::CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice) {
     }
 
     return requiredExtensions.empty();
+
+}
+
+void VulkanClass::CreateSupportedSampleCounts(VkPhysicalDevice physicalDevice) {
+
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts;
+
+    if (counts & VK_SAMPLE_COUNT_1_BIT) msaaSamples.push_back(VK_SAMPLE_COUNT_1_BIT);
+    if (counts & VK_SAMPLE_COUNT_2_BIT) msaaSamples.push_back(VK_SAMPLE_COUNT_2_BIT);
+    if (counts & VK_SAMPLE_COUNT_4_BIT) msaaSamples.push_back(VK_SAMPLE_COUNT_4_BIT);
+    if (counts & VK_SAMPLE_COUNT_8_BIT) msaaSamples.push_back(VK_SAMPLE_COUNT_8_BIT);
+    if (counts & VK_SAMPLE_COUNT_16_BIT) msaaSamples.push_back(VK_SAMPLE_COUNT_16_BIT);
+    if (counts & VK_SAMPLE_COUNT_32_BIT) msaaSamples.push_back(VK_SAMPLE_COUNT_32_BIT);
+    if (counts & VK_SAMPLE_COUNT_64_BIT) msaaSamples.push_back(VK_SAMPLE_COUNT_64_BIT);
+
+    for (auto s : msaaSamples) {
+        std::cout << "MSAA " << s << "x supported!" << std::endl;
+    }
 
 }
 
@@ -742,7 +766,7 @@ void VulkanClass::CreateOffscreenResources() {
 
 void VulkanClass::CreateOffscreenRenderPass() {
 
-    if (msaaSamples != VK_SAMPLE_COUNT_1_BIT) return;
+    if (SETTINGS.MSAA_SAMPLES != VK_SAMPLE_COUNT_1_BIT) return;
 
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapChainImageFormat;
@@ -774,7 +798,7 @@ void VulkanClass::CreateOffscreenRenderPass() {
 
 void VulkanClass::CreateMSAAResources() {
 
-    if (msaaSamples == VK_SAMPLE_COUNT_1_BIT) return;
+    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) return;
 
     // ===== MSAA IMAGE =====
     VkImageCreateInfo imageInfoMSAA{};
@@ -788,9 +812,7 @@ void VulkanClass::CreateMSAAResources() {
     imageInfoMSAA.format = swapChainImageFormat;
     imageInfoMSAA.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfoMSAA.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
-    imageInfoMSAA.samples = msaaSamples; // 🔥 KLUCZ
-
+    imageInfoMSAA.samples = SETTINGS.MSAA_SAMPLES;
     imageInfoMSAA.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     imageInfoMSAA.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -835,12 +857,12 @@ void VulkanClass::CreateMSAAResources() {
 
 void VulkanClass::CreateMSAARenderPass() {
 
-    if (msaaSamples == VK_SAMPLE_COUNT_1_BIT) return;
+    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) return;
 
     // MSAA attachment
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapChainImageFormat;
-    colorAttachment.samples = msaaSamples;
+    colorAttachment.samples = SETTINGS.MSAA_SAMPLES;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -914,7 +936,7 @@ void VulkanClass::CreateFramebuffer() {
     framebufferInfo.height = SETTINGS.HEIGHT;
     framebufferInfo.layers = 1;
 
-    if (msaaSamples == VK_SAMPLE_COUNT_1_BIT) {
+    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
         framebufferInfo.renderPass = offscreenRenderPass;
     } else {
         framebufferInfo.renderPass = msaaRenderPass;
@@ -922,7 +944,7 @@ void VulkanClass::CreateFramebuffer() {
 
     VkImageView attachments[2]; // 🔥 jedna tablica
 
-    if (msaaSamples == VK_SAMPLE_COUNT_1_BIT) {
+    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
 
         attachments[0] = offscreenImageView;
 
@@ -1063,7 +1085,7 @@ void VulkanClass::CreateScenePipeline() {
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
-    multisampling.rasterizationSamples = msaaSamples;
+    multisampling.rasterizationSamples = SETTINGS.MSAA_SAMPLES;
 
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
     colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -1113,7 +1135,7 @@ void VulkanClass::CreateScenePipeline() {
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (msaaSamples == VK_SAMPLE_COUNT_1_BIT) {
+    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
         pipelineInfo.renderPass = offscreenRenderPass;
     } else {
         pipelineInfo.renderPass = msaaRenderPass;
@@ -1392,7 +1414,7 @@ void VulkanClass::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = {SETTINGS.WIDTH, SETTINGS.HEIGHT};
 
-    if (msaaSamples == VK_SAMPLE_COUNT_1_BIT) {
+    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
         renderPassInfo.renderPass = offscreenRenderPass;
     } else {
         renderPassInfo.renderPass = msaaRenderPass;

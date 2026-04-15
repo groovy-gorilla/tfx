@@ -89,8 +89,7 @@ private:
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;
     std::vector<VkFence> inFlightFences;
-
-    VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
+    std::vector<VkSampleCountFlagBits> msaaSamples;
     uint32_t currentFrame = 0;
 
     void CreateInstance();
@@ -101,6 +100,7 @@ private:
     void CreateSurface(GLFWwindow *window);
     void PickPhysicalDevice();
     bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
+    void CreateSupportedSampleCounts(VkPhysicalDevice physicalDevice);
     void CreateLogicalDevice();
     void CreateSwapChain(GLFWwindow* window);
     SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
@@ -132,7 +132,6 @@ private:
     VkShaderModule CreateShaderModule(const std::vector<char> &code);
     void CleanupSwapChain();
     uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
         if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {

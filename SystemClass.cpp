@@ -84,15 +84,15 @@ void SystemClass::Loop() {
             graphics->vulkan->SetResolution(3440, 1440);
         }
 
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE ) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             break;
         }
 
-        if (glfwGetKey(window, GLFW_KEY_N ) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) {
             graphics->vulkan->SetMSAA(VK_SAMPLE_COUNT_1_BIT);
         }
 
-        if (glfwGetKey(window, GLFW_KEY_M ) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
             graphics->vulkan->SetMSAA(VK_SAMPLE_COUNT_16_BIT);
         }
 
