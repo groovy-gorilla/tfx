@@ -29,3 +29,7 @@ mkdir build
 cd build
 cmake ..
 make
+```
+
+## Status
+Work in progress.
