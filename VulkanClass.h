@@ -1,6 +1,5 @@
 #ifndef VULKANCLASS_H
 #define VULKANCLASS_H
-#include <iostream>
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -8,34 +7,6 @@
 #include <fstream>
 
 
-const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
-};
-
-const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
-
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
-//queue families
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-    bool isComplete() {
-        return graphicsFamily.has_value() && presentFamily.has_value();
-    }
-};
-
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
 
 class VulkanClass {
 
@@ -46,14 +17,39 @@ public:
     void Initialize(GLFWwindow *window);
     void Shutdown();
 
-    VkDevice getDevice();
-    void drawFrame(GLFWwindow* window);
+    VkDevice GetDevice();
+    void DrawFrame(GLFWwindow* window);
     void SetResolution(uint32_t width, uint32_t height);
     void SetMSAA(VkSampleCountFlagBits msaa);
     void SetFilter(VkFilter filter);
-    bool framebufferResized = false;
+    void SetFramebufferResized(bool value);
+    void SetAspectRatioEnabled(bool value);
 
 private:
+    struct SwapChainSupportDetails {
+        VkSurfaceCapabilitiesKHR capabilities;
+        std::vector<VkSurfaceFormatKHR> formats;
+        std::vector<VkPresentModeKHR> presentModes;
+    };
+
+    struct QueueFamilyIndices {
+        std::optional<uint32_t> graphicsFamily;
+        std::optional<uint32_t> presentFamily;
+        bool isComplete() {
+            return graphicsFamily.has_value() && presentFamily.has_value();
+        }
+    };
+
+    const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+
+    #ifdef NDEBUG
+        const bool enableValidationLayers = false;
+    #else
+        const bool enableValidationLayers = true;
+    #endif
+
     VkInstance instance;
     VkDebugUtilsMessengerEXT debugMessenger;
     VkSurfaceKHR surface;
@@ -92,6 +88,7 @@ private:
     std::vector<VkFence> inFlightFences;
     std::vector<VkSampleCountFlagBits> msaaSamples;
     uint32_t currentFrame = 0;
+    bool framebufferResized = false;
 
     void CreateInstance();
     bool CheckValidationLayerSupport();
@@ -121,6 +118,7 @@ private:
     void CreateSampler();
     void CreateDescriptorPool();
     void CreateDescriptorSet();
+    void UpdateDescriptorSet();
     void CreateFramebuffers();
     void CreateCommandPool();
     void CreateCommandBuffers();
@@ -135,36 +133,8 @@ private:
     void CleanupSwapChain();
     uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-        if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-            std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
-        }
-        return VK_FALSE;
-    }
-
 };
 
-// validation layers inline functions
-inline VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
-    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
-    }
-}
-
-inline void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
-    if (func != nullptr) {
-        func(instance, debugMessenger, pAllocator);
-    }
-}
-
-inline void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-    auto app = reinterpret_cast<VulkanClass*>(glfwGetWindowUserPointer(window));
-    app->framebufferResized = true;
-}
 
 
 #endif //VULKANCLASS_H

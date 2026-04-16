@@ -3,9 +3,45 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <iostream>
 #include <limits>
 #include <set>
 #include <stdexcept>
+
+// validation layers inline functions
+static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
+
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+
+}
+
+static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        func(instance, debugMessenger, pAllocator);
+    }
+
+}
+
+static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
+
+    auto app = reinterpret_cast<VulkanClass*>(glfwGetWindowUserPointer(window));
+    app->SetFramebufferResized(true);
+
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+        std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+    }
+    return VK_FALSE;
+}
 
 VulkanClass::VulkanClass() {
 
@@ -169,13 +205,13 @@ void VulkanClass::Shutdown() {
 
 }
 
-VkDevice VulkanClass::getDevice() {
+VkDevice VulkanClass::GetDevice() {
 
     return device;
 
 }
 
-void VulkanClass::drawFrame(GLFWwindow* window) {
+void VulkanClass::DrawFrame(GLFWwindow* window) {
 
     if (framebufferResized) {
         RecreateSwapChain(window);
@@ -264,6 +300,18 @@ void VulkanClass::SetFilter(VkFilter filter) {
     SETTINGS.FILTER = filter;
 
     RecreateSampler();
+
+}
+
+void VulkanClass::SetFramebufferResized(bool value) {
+
+    framebufferResized = value;
+
+}
+
+void VulkanClass::SetAspectRatioEnabled(bool value) {
+
+    SETTINGS.KEEP_ASPECT_RATIO = value;
 
 }
 
@@ -608,7 +656,7 @@ void VulkanClass::CreateSwapChain(GLFWwindow *window) {
 
 }
 
-SwapChainSupportDetails VulkanClass::QuerySwapChainSupport(VkPhysicalDevice device) {
+VulkanClass::SwapChainSupportDetails VulkanClass::QuerySwapChainSupport(VkPhysicalDevice device) {
 
     SwapChainSupportDetails details;
 
@@ -1335,6 +1383,28 @@ void VulkanClass::CreateDescriptorSet() {
 
 }
 
+void VulkanClass::UpdateDescriptorSet() {
+
+    // Opis obrazu (tekstury)
+    VkDescriptorImageInfo imageInfo{};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = offscreenImageView;
+    imageInfo.sampler = sampler;
+
+    // Update descriptor seta
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.dstSet = descriptorSet;
+    descriptorWrite.dstBinding = 0; // musi się zgadzać z shaderem
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pImageInfo = &imageInfo;
+
+    vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+
+}
+
 void VulkanClass::CreateFramebuffers() {
 
     swapChainFramebuffers.resize(swapChainImageViews.size());
@@ -1473,7 +1543,7 @@ void VulkanClass::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t im
         nullptr
     );
 
-    if (SETTINGS.ASPECT_RATIO) {
+    if (SETTINGS.KEEP_ASPECT_RATIO) {
 
         float aspectRender = static_cast<float>(SETTINGS.WIDTH) / SETTINGS.HEIGHT;
         float aspectScreen = static_cast<float>(swapChainExtent.width) / swapChainExtent.height;
@@ -1634,19 +1704,20 @@ void VulkanClass::RecreatePipeline() {
 
 void VulkanClass::RecreateSampler() {
 
-    vkDeviceWaitIdle(device);
+    vkWaitForFences(device, SETTINGS.MAX_FRAMES_IN_FLIGHT, inFlightFences.data(), VK_TRUE, UINT64_MAX);
 
     // Niszczenie starego
     vkDestroySampler(device, sampler, nullptr);
 
     // Tworzenie nowego
     CreateSampler();
-    vkResetDescriptorPool(device, descriptorPool, 0);
-    CreateDescriptorSet();
+
+    // Update descriptora
+    UpdateDescriptorSet();
 
 }
 
-QueueFamilyIndices VulkanClass::FindQueueFamilies(VkPhysicalDevice device) {
+VulkanClass::QueueFamilyIndices VulkanClass::FindQueueFamilies(VkPhysicalDevice device) {
 
     QueueFamilyIndices indices;
 
@@ -1750,3 +1821,4 @@ uint32_t VulkanClass::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags 
     throw std::runtime_error("Failed to find suitable memory type!");
 
 }
+

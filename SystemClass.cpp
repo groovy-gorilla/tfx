@@ -1,6 +1,6 @@
 #include "SystemClass.h"
 
-#include <thread>
+#include <iostream>
 
 
 SystemClass::SystemClass() {
@@ -53,6 +53,7 @@ void SystemClass::InitializeWindow() {
         glfwWindowHint(GLFW_REFRESH_RATE, GLFW_DONT_CARE);
         glfwWindowHint(GLFW_PLATFORM_X11, GLFW_TRUE);
         window = glfwCreateWindow(SETTINGS.WIDTH, SETTINGS.HEIGHT, "Vulkan", nullptr, nullptr);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 
     if (SETTINGS.DISPLAY_MODE == DISPLAY_MODE::FULLSCREEN) {
@@ -62,6 +63,7 @@ void SystemClass::InitializeWindow() {
         glfwWindowHint(GLFW_REFRESH_RATE, GLFW_DONT_CARE);
         GLFWmonitor* monitor = glfwGetPrimaryMonitor();
         window = glfwCreateWindow(SETTINGS.WIDTH, SETTINGS.HEIGHT, "Vulkan", monitor, nullptr);
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
 }
 
@@ -73,39 +75,64 @@ void SystemClass::ShutdownWindow() {
 void SystemClass::Loop() {
     while (!glfwWindowShouldClose(window)) {
 
-        graphics->vulkan->drawFrame(window);
+        graphics->vulkan->DrawFrame(window);
+
         glfwPollEvents();
+        input->BeginProcessInput(window);
 
-        if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
-            graphics->vulkan->SetResolution(320, 240);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+        // SCREEN RESOLUTION
+        if (input->IsPressed(GLFW_KEY_EQUAL)) {
             graphics->vulkan->SetResolution(3440, 1440);
         }
 
-        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+        if (input->IsPressed(GLFW_KEY_MINUS)){
+            graphics->vulkan->SetResolution(320, 240);
+        }
+
+        // MSAA
+        static bool msaa = false;
+        if (input->IsPressed(GLFW_KEY_M)) {
+            if (msaa) {
+                graphics->vulkan->SetMSAA(VK_SAMPLE_COUNT_1_BIT);
+                msaa = false;
+            } else {
+                graphics->vulkan->SetMSAA(VK_SAMPLE_COUNT_16_BIT);
+                msaa = true;
+            }
+        }
+
+        // FILTER
+        static bool filter = false;
+        if (input->IsPressed(GLFW_KEY_F)) {
+            if (filter) {
+                graphics->vulkan->SetFilter(VK_FILTER_NEAREST);
+                filter = false;
+            } else {
+                graphics->vulkan->SetFilter(VK_FILTER_LINEAR);
+                filter = true;
+            }
+        }
+
+        // ASPECT RATIO
+        static bool aspect = false;
+        if (input->IsPressed(GLFW_KEY_A)) {
+            if (aspect) {
+                graphics->vulkan->SetAspectRatioEnabled(false);
+                aspect = false;
+            } else {
+                graphics->vulkan->SetAspectRatioEnabled(true);
+                aspect = true;
+            }
+        }
+
+        // QUIT
+        if (input->IsPressed(GLFW_KEY_ESCAPE)) {
             break;
         }
 
-        if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) {
-            graphics->vulkan->SetMSAA(VK_SAMPLE_COUNT_1_BIT);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS) {
-            graphics->vulkan->SetMSAA(VK_SAMPLE_COUNT_16_BIT);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_K) == GLFW_PRESS) {
-            graphics->vulkan->SetFilter(VK_FILTER_NEAREST);
-        }
-
-        if (glfwGetKey(window, GLFW_KEY_L) == GLFW_PRESS) {
-            graphics->vulkan->SetFilter(VK_FILTER_LINEAR);
-        }
-
+        input->EndProcessInput();
 
     }
 
-    vkDeviceWaitIdle(graphics->vulkan->getDevice());
+    vkDeviceWaitIdle(graphics->vulkan->GetDevice());
 }
