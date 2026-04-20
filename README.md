@@ -16,34 +16,22 @@ The engine will be used as a foundation for future game projects.
 - Expandable for future features
 
 ## Project Structure
-<pre style="line-height: 13px; font-size: 12px;">
+```
 Main
- :
  ├── System
- │    :
  │    ├── Graphics
- │    │    :
  │    │    ├── Vulkan
- │    │    │
  │    │    ├── Texture
- │    │    │
  │    │    ├── Bitmap
- │    │    │    :
  │    │    │    └── BitmapRenderer
- │    │    │ 
  │    │    ├── Font
- │    │    │    :
  │    │    │    └── Text
- │    │    │         :
  │    │    │         └── TextRenderer
  │    │    └── Renderer
- │    │
  │    └── Input
- │
  ├── ErrorDialog
- │
  └── Global
-</pre>
+```
 
 ## Build
 
