@@ -16,11 +16,5 @@ struct Settings {
 };
 extern Settings SETTINGS;
 
-// Struktura VulkanContext
-struct VulkanContext {
-    VkDevice device;
-    VkPhysicalDevice physicalDevice;
-    VkCommandPool commandPool;
-    VkQueue graphicsQueue;
-};
+
 

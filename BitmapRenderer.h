@@ -1,0 +1,8 @@
+//
+// Created by groovy on 21.04.2026.
+//
+
+#ifndef VULKAN_BITMAPRENDERER_H
+#define VULKAN_BITMAPRENDERER_H
+
+#endif //VULKAN_BITMAPRENDERER_H
