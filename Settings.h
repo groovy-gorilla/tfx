@@ -6,8 +6,8 @@
 // Struktura z ustawieniami
 struct Settings {
     const std::string TITLE = "Vulkan";
-    uint32_t WIDTH = 640;
-    uint32_t HEIGHT = 480;
+    uint32_t WIDTH = 3440;
+    uint32_t HEIGHT = 1440;
     bool FULLSCREEN = true;
     bool KEEP_ASPECT_RATIO = false;
     const int MAX_FRAMES_IN_FLIGHT = 2;

@@ -2,7 +2,7 @@
 #include <memory>
 
 #include "System.h"
-#include "Global.h"
+#include "Settings.h"
 
 Settings SETTINGS;
 

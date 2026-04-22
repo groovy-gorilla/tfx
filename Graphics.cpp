@@ -1,8 +1,13 @@
 #include "Graphics.h"
+#include "Texture.h"
+#include "Bitmap.h"
+#include "BitmapRenderer.h"
 
 Graphics::Graphics() {
 
     m_vulkan = nullptr;
+    m_bitmap = nullptr;
+    m_bitmapRenderer = nullptr;
 
 }
 
@@ -13,16 +18,50 @@ void Graphics::Initialize(GLFWwindow *window) {
     m_vulkan = new Vulkan;
     m_vulkan->Initialize(window);
 
-    Texture texture;
-    texture.Initialize(m_vulkan->GetContext(), "test.ktx");
-    texture.Shutdown(m_vulkan->GetContext());
+    m_bitmap = new Bitmap;
+    m_bitmap->Initialize(m_vulkan->GetDevice(),
+                      m_vulkan->GetPhysicalDevice(),
+                      m_vulkan->GetCommandPool(),
+                      m_vulkan->GetGraphicsQueue(),
+                      "gruvbox.ktx");
+
+    VkRenderPass& pass = (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) ? m_vulkan->GetOffscreenRenderPass() : m_vulkan->GetMSAARenderPass();
+
+    m_bitmapRenderer = new BitmapRenderer;
+    m_bitmapRenderer->Initialize(m_vulkan->GetDevice(), m_vulkan->GetPhysicalDevice(), pass, m_vulkan->GetExtent());
+    m_bitmapRenderer->SetBitmap(*m_bitmap);
 
 }
 
 void Graphics::Shutdown() {
 
-    m_vulkan->Shutdown();
-    delete m_vulkan;
-    m_vulkan = nullptr;
+    if (m_bitmapRenderer) {
+        m_bitmapRenderer->Shutdown();
+        delete m_bitmapRenderer;
+        m_bitmapRenderer = nullptr;
+    }
+
+    if (m_bitmap) {
+        m_bitmap->Shutdown(m_vulkan->GetDevice());
+        delete m_bitmap;
+        m_bitmap = nullptr;
+    }
+
+    if (m_vulkan) {
+        m_vulkan->Shutdown();
+        delete m_vulkan;
+        m_vulkan = nullptr;
+    }
+
+}
+
+void Graphics::Draw(GLFWwindow *window) {
+
+    VkCommandBuffer cmd =  m_vulkan->BeginScene(window);
+
+    m_bitmapRenderer->SetPosition(0, 0, SETTINGS.WIDTH, SETTINGS.HEIGHT);
+    m_bitmapRenderer->Draw(cmd);
+
+    m_vulkan->EndScene(window, cmd);
 
 }

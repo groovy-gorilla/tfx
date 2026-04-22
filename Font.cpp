@@ -1,17 +1,19 @@
 #include "Font.h"
 
+#include <stdexcept>
+
 Font::Font() {
 
-
+    m_texture = nullptr;
 
 }
 
 Font::~Font() = default;
 
-void Font::Initialize() {
+void Font::Initialize(Texture* texture) {
 
-    LoadFontData();
-    LoadFontTexture();
+    if (!texture) throw std::runtime_error("Texture is nullptr");
+    m_texture = texture;
 
 }
 
@@ -21,14 +23,5 @@ void Font::Shutdown() {
 
 }
 
-void Font::LoadFontData() {
 
 
-
-}
-
-void Font::LoadFontTexture() {
-
-
-
-}

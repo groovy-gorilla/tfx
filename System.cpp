@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <iostream>
-#include "Global.h"
+#include "Settings.h"
 
 System::System() {
     m_window = nullptr;
@@ -104,8 +104,12 @@ void System::Loop() {
 
     while (!glfwWindowShouldClose(m_window)) {
 
-        m_graphics->m_vulkan->DrawFrame(m_window);
+        // RYSOWANIE
+        m_graphics->Draw(m_window);
 
+
+
+        // OBSŁUGA KLAWIATURY
         glfwPollEvents();
         m_input->BeginProcessInput(m_window);
 

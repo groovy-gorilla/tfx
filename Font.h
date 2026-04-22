@@ -1,6 +1,6 @@
 #ifndef FONTCLASS_H
 #define FONTCLASS_H
-#include <vulkan/vulkan_core.h>
+#include "Texture.h"
 
 struct FontType {
     float u0, v0;
@@ -13,12 +13,12 @@ public:
     Font();
     ~Font();
 
-    void Initialize();
+    void Initialize(Texture* texture);
     void Shutdown();
 
 private:
-    void LoadFontData();
-    void LoadFontTexture();
+    Texture* m_texture;
+
 
 };
 

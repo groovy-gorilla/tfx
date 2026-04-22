@@ -1,7 +1,5 @@
-#ifndef VULKANCLASS_H
-#define VULKANCLASS_H
+#pragma once
 
-#include "Global.h"
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -19,8 +17,16 @@ public:
     void Initialize(GLFWwindow *window);
     void Shutdown();
 
-    VkDevice GetDevice();
-    void DrawFrame(GLFWwindow* window);
+    VkDevice& GetDevice();
+    VkPhysicalDevice& GetPhysicalDevice();
+    VkCommandPool& GetCommandPool();
+    VkQueue& GetGraphicsQueue();
+    VkRenderPass& GetRenderPass();
+    VkRenderPass& GetOffscreenRenderPass();
+    VkRenderPass& GetMSAARenderPass();
+    VkExtent2D& GetExtent();
+    VkCommandBuffer BeginScene(GLFWwindow* window);
+    void EndScene(GLFWwindow* window, VkCommandBuffer cmd);
     void SetResolution(GLFWwindow* window, uint32_t width, uint32_t height);
     void SetMSAA(VkSampleCountFlagBits msaa);
     void SetFilter(VkFilter filter);
@@ -28,7 +34,6 @@ public:
     void SetAspectRatioEnabled(bool value);
     void SetFullscreenEnabled(GLFWwindow* window, bool value);
     std::vector<Resolution> GetVideoModes();
-    VulkanContext GetContext() const;
 
 private:
 
@@ -95,6 +100,7 @@ private:
     std::vector<VkSampleCountFlagBits> m_msaaSamples;
     std::vector<Resolution> m_videoModes;
     uint32_t m_currentFrame = 0;
+    uint32_t m_imageIndex = 0;
     bool m_framebufferResized = false;
 
     void CreateInstance();
@@ -143,6 +149,3 @@ private:
 
 };
 
-
-
-#endif //VULKANCLASS_H

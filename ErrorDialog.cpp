@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#include "Global.h"
+#include "Settings.h"
 #include <sstream>
 
 [[noreturn]] void VulkanThrowError(const char* call, VkResult result, const char* file, int line) {

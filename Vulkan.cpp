@@ -1,5 +1,5 @@
 #include "Vulkan.h"
-#include "Global.h"
+#include "Settings.h"
 #include "ErrorDialog.h"
 #include <algorithm>
 #include <array>
@@ -253,36 +253,215 @@ void Vulkan::Shutdown() {
 
 }
 
-VkDevice Vulkan::GetDevice() {
-
+VkDevice& Vulkan::GetDevice() {
     return m_device;
-
 }
 
-void Vulkan::DrawFrame(GLFWwindow* window) {
+VkPhysicalDevice& Vulkan::GetPhysicalDevice() {
+    return m_physicalDevice;
+}
+
+VkCommandPool& Vulkan::GetCommandPool() {
+    return m_commandPool;
+}
+
+VkQueue& Vulkan::GetGraphicsQueue() {
+    return m_graphicsQueue;
+}
+
+VkRenderPass& Vulkan::GetRenderPass() {
+    return m_renderPass;
+}
+
+VkRenderPass& Vulkan::GetOffscreenRenderPass() {
+    return m_offscreenRenderPass;
+}
+
+VkRenderPass& Vulkan::GetMSAARenderPass() {
+    return m_msaaRenderPass;
+}
+
+VkExtent2D& Vulkan::GetExtent() {
+    return m_swapChainExtent;
+}
+
+VkCommandBuffer Vulkan::BeginScene(GLFWwindow* window) {
 
     VkResult result;
 
+
+    // *************************************************************************************************************
+    // BEGIN
+    //**************************************************************************************************************
     if (m_framebufferResized) {
         RecreateSwapChain(window);
         m_framebufferResized = false;
     }
 
     VK_CHECK(vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX));
-
     VK_CHECK(vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]));
 
-    uint32_t imageIndex;
-    result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+    m_imageIndex = 0;
+    result = vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &m_imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         RecreateSwapChain(window);
-        return;
+        // return
     }
 
     VK_CHECK(vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0));
 
-    RecordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
+    // *************************************************************************************************************
+    // RECORD COMMAND BUFFER
+    //**************************************************************************************************************
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
+    VK_CHECK(vkBeginCommandBuffer(m_commandBuffers[m_currentFrame], &beginInfo));
+
+    // =========================================================
+    // PASS 1 — OFFSCREEN/MSAA (SCENA)
+    // =========================================================
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.framebuffer = m_framebuffer;
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = {SETTINGS.WIDTH, SETTINGS.HEIGHT};
+
+    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
+        renderPassInfo.renderPass = m_offscreenRenderPass;
+    } else {
+        renderPassInfo.renderPass = m_msaaRenderPass;
+    }
+
+    VkClearValue clearColor = {{{0.0f, 0.0f, 1.0f, 1.0f}}};
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(m_commandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    //vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_scenePipeline);
+
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = static_cast<float>(SETTINGS.HEIGHT);
+    viewport.width = static_cast<float>(SETTINGS.WIDTH);
+    viewport.height = -static_cast<float>(SETTINGS.HEIGHT);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = {SETTINGS.WIDTH, SETTINGS.HEIGHT};
+    vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &scissor);
+
+    // Zwracamy CommandBuffer i RYSUJEMY
+    return m_commandBuffers[m_currentFrame];
+
+}
+
+void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
+
+    m_commandBuffers[m_currentFrame] = cmd;
+
+    vkCmdEndRenderPass(m_commandBuffers[m_currentFrame]);
+
+
+    // =========================================================
+    // PASS 2 — SWAPCHAIN (ekran)
+    // =========================================================
+
+    VkRenderPassBeginInfo renderPassInfo{};
+    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    renderPassInfo.renderPass = m_renderPass;
+    renderPassInfo.framebuffer = m_swapChainFramebuffers[m_imageIndex];
+    renderPassInfo.renderArea.offset = {0, 0};
+    renderPassInfo.renderArea.extent = m_swapChainExtent;
+
+    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    renderPassInfo.clearValueCount = 1;
+    renderPassInfo.pClearValues = &clearColor;
+
+    vkCmdBeginRenderPass(m_commandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // POST PROCESS
+    vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_postPipeline);
+
+    // descriptor set (tekstura)
+    vkCmdBindDescriptorSets(
+        m_commandBuffers[m_currentFrame],
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_postPipelineLayout,
+        0,
+        1,
+        &m_descriptorSet,
+        0,
+        nullptr
+    );
+
+    if (SETTINGS.KEEP_ASPECT_RATIO) {
+
+        float aspectRender = static_cast<float>(SETTINGS.WIDTH) / static_cast<float>(SETTINGS.HEIGHT);
+        float aspectScreen = static_cast<float>(m_swapChainExtent.width) / static_cast<float>(m_swapChainExtent.height);
+
+        float width, height;
+
+        if (aspectScreen > aspectRender) {
+            // ekran szerszy → pasy po bokach
+            height = static_cast<float>(m_swapChainExtent.height);
+            width = height * aspectRender;
+        } else {
+            // ekran wyższy → pasy góra/dół
+            width = static_cast<float>(m_swapChainExtent.width);
+            height = width / aspectRender;
+        }
+
+        float x = (static_cast<float>(m_swapChainExtent.width) - width) / 2.0f;
+        float y = (static_cast<float>(m_swapChainExtent.height) - height) / 2.0f;
+
+        VkViewport viewport{};
+        viewport.x = x;
+        viewport.y = y;
+        viewport.width = width;
+        viewport.height = height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {static_cast<int>(x), static_cast<int>(y)};
+        scissor.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &scissor);
+
+    } else {
+
+        VkViewport viewport{};
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = static_cast<float>(m_swapChainExtent.width);
+        viewport.height = static_cast<float>(m_swapChainExtent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = {m_swapChainExtent.width, m_swapChainExtent.height};
+        vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &scissor);
+    }
+
+    vkCmdDraw(m_commandBuffers[m_currentFrame], 3, 1, 0, 0);
+
+    vkCmdEndRenderPass(m_commandBuffers[m_currentFrame]);
+
+    VK_CHECK(vkEndCommandBuffer(m_commandBuffers[m_currentFrame]));
+    // ***********************************************************************
+    // ZAKOŃCZENIE COMMAND BUFFER
+    // ***********************************************************************
+
+    // ***********************************************************************
+    // END
+    // ***********************************************************************
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     VkSubmitInfo submitInfo{};
@@ -311,9 +490,9 @@ void Vulkan::DrawFrame(GLFWwindow* window) {
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
 
-    presentInfo.pImageIndices = &imageIndex;
+    presentInfo.pImageIndices = &m_imageIndex;
 
-    result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(m_presentQueue, &presentInfo);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         RecreateSwapChain(window);
         return;
@@ -1246,10 +1425,10 @@ void Vulkan::CreateDescriptorSetLayout() {
 
 void Vulkan::CreateScenePipeline() {
 
-    auto vertShaderCode = ReadFile("../shaders/vert.spv");
+    auto vertShaderCode = ReadFile("../shaders/scene_vert.spv");
     VkShaderModule vertShaderModule = CreateShaderModule(vertShaderCode);
 
-    auto fragShaderCode = ReadFile("../shaders/frag.spv");
+    auto fragShaderCode = ReadFile("../shaders/scene_frag.spv");
     VkShaderModule fragShaderModule = CreateShaderModule(fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
@@ -1602,149 +1781,6 @@ void Vulkan::CreateCommandBuffers() {
 
 }
 
-void Vulkan::RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex) {
-
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-    VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-
-    // =========================================================
-    // PASS 1 — OFFSCREEN/MSAA
-    // =========================================================
-
-    VkRenderPassBeginInfo renderPassInfo{};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.framebuffer = m_framebuffer;
-    renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = {SETTINGS.WIDTH, SETTINGS.HEIGHT};
-
-    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
-        renderPassInfo.renderPass = m_offscreenRenderPass;
-    } else {
-        renderPassInfo.renderPass = m_msaaRenderPass;
-    }
-
-    VkClearValue clearColorPass1 = {{{0.0f, 0.0f, 1.0f, 1.0f}}};
-    renderPassInfo.clearValueCount = 1;
-    renderPassInfo.pClearValues = &clearColorPass1;
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_scenePipeline);
-
-    VkViewport viewport1{};
-    viewport1.x = 0.0f;
-    viewport1.y = 0.0f;
-    viewport1.width = static_cast<float>(SETTINGS.WIDTH);
-    viewport1.height = static_cast<float>(SETTINGS.HEIGHT);
-    viewport1.minDepth = 0.0f;
-    viewport1.maxDepth = 1.0f;
-    vkCmdSetViewport(commandBuffer, 0, 1, &viewport1);
-
-    VkRect2D scissor1{};
-    scissor1.offset = {0, 0};
-    scissor1.extent = {SETTINGS.WIDTH, SETTINGS.HEIGHT};
-    vkCmdSetScissor(commandBuffer, 0, 1, &scissor1);
-
-    // rysujesz scenę (np. trójkąt)
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-    vkCmdEndRenderPass(commandBuffer);
-
-    // =========================================================
-    // PASS 2 — SWAPCHAIN (ekran)
-    // =========================================================
-
-    VkRenderPassBeginInfo renderPassInfo2{};
-    renderPassInfo2.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo2.renderPass = m_renderPass;
-    renderPassInfo2.framebuffer = m_swapChainFramebuffers[imageIndex];
-    renderPassInfo2.renderArea.offset = {0, 0};
-    renderPassInfo2.renderArea.extent = m_swapChainExtent;
-
-    VkClearValue clearColorPass2 = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    renderPassInfo2.clearValueCount = 1;
-    renderPassInfo2.pClearValues = &clearColorPass2;
-
-    vkCmdBeginRenderPass(commandBuffer, &renderPassInfo2, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_postPipeline);
-
-    // descriptor set (tekstura)
-    vkCmdBindDescriptorSets(
-        commandBuffer,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        m_postPipelineLayout,
-        0,
-        1,
-        &m_descriptorSet,
-        0,
-        nullptr
-    );
-
-    if (SETTINGS.KEEP_ASPECT_RATIO) {
-
-        float aspectRender = static_cast<float>(SETTINGS.WIDTH) / static_cast<float>(SETTINGS.HEIGHT);
-        float aspectScreen = static_cast<float>(m_swapChainExtent.width) / static_cast<float>(m_swapChainExtent.height);
-
-        float width, height;
-
-        if (aspectScreen > aspectRender) {
-            // ekran szerszy → pasy po bokach
-            height = static_cast<float>(m_swapChainExtent.height);
-            width = height * aspectRender;
-        } else {
-            // ekran wyższy → pasy góra/dół
-            width = static_cast<float>(m_swapChainExtent.width);
-            height = width / aspectRender;
-        }
-
-        float x = (static_cast<float>(m_swapChainExtent.width) - width) / 2.0f;
-        float y = (static_cast<float>(m_swapChainExtent.height) - height) / 2.0f;
-
-        VkViewport viewport2{};
-        viewport2.x = x;
-        viewport2.y = y;
-        viewport2.width = width;
-        viewport2.height = height;
-        viewport2.minDepth = 0.0f;
-        viewport2.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport2);
-
-        VkRect2D scissor2{};
-        scissor2.offset = {static_cast<int>(x), static_cast<int>(y)};
-        scissor2.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor2);
-
-    } else {
-
-        VkViewport viewport2{};
-        viewport2.x = 0;
-        viewport2.y = 0;
-        viewport2.width = static_cast<float>(m_swapChainExtent.width);
-        viewport2.height = static_cast<float>(m_swapChainExtent.height);
-        viewport2.minDepth = 0.0f;
-        viewport2.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport2);
-
-        VkRect2D scissor2{};
-        scissor2.offset = {0, 0};
-        scissor2.extent = {m_swapChainExtent.width, m_swapChainExtent.height};
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor2);
-    }
-
-    // fullscreen triangle
-    vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
-    vkCmdEndRenderPass(commandBuffer);
-
-    // =========================================================
-
-    VK_CHECK(vkEndCommandBuffer(commandBuffer));
-
-}
-
 void Vulkan::CreateSyncObjects() {
 
     m_imageAvailableSemaphores.resize(SETTINGS.MAX_FRAMES_IN_FLIGHT);
@@ -1956,13 +1992,3 @@ uint32_t Vulkan::FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags prope
 
 }
 
-VulkanContext Vulkan::GetContext() const {
-
-    VulkanContext ctx{};
-    ctx.device = m_device;
-    ctx.physicalDevice = m_physicalDevice;
-    ctx.commandPool = m_commandPool;
-    ctx.graphicsQueue = m_graphicsQueue;
-    return ctx;
-
-}

@@ -1,4 +1,3 @@
-- dokończ TextureClass (GetTextureView i GetSampler)
 - FontClass
 - TextClass
 - FPSClass wyświetlanie klatek na sekundę

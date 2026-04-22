@@ -18,13 +18,17 @@ add_executable(vulkan_app main.cpp
         Graphics.cpp
         Vulkan.h
         Vulkan.cpp
-        Global.h
+        Settings.h
         ErrorDialog.h
         ErrorDialog.cpp
         Font.h
         Font.cpp
         Texture.h
-        Texture.cpp)
+        Texture.cpp
+        Bitmap.h
+        Bitmap.cpp
+        BitmapRenderer.h
+        BitmapRenderer.cpp)
 
 
 # include
