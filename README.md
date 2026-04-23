@@ -19,7 +19,7 @@ The engine will be used as a foundation for future game projects.
 
 ```
 Main
- ├── System
+├── System
  │    ├── Graphics
  │    │    ├── Vulkan
  │    │    ├── Texture
