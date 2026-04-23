@@ -30,6 +30,7 @@ Main
  │    │    │         └── TextRenderer
  │    │    └── Renderer
  │    └── Input
+ │
  ├── ErrorDialog
  └── Settings
 ```
