@@ -1,3 +1,10 @@
+# Debug flags
+set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+
+# AddressSanitizer (tylko dla Debug)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit-frame-pointer")
+set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fsanitize=address")
+
 cmake_minimum_required(VERSION 3.30)
 project(vulkan)
 

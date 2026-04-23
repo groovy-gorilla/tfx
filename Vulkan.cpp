@@ -39,7 +39,7 @@ static void framebufferResizeCallback(GLFWwindow* window, int width, int height)
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+    if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
         std::string msg = "Validation Layer\n\n"
         "ID:" + std::string(pCallbackData->pMessageIdName) + "\n\n"
         "Message:\n" + std::string(pCallbackData->pMessage);
@@ -58,7 +58,7 @@ Vulkan::Vulkan() {
     m_graphicsQueue = VK_NULL_HANDLE;
     m_presentQueue = VK_NULL_HANDLE;
     m_swapChain = VK_NULL_HANDLE;
-    m_renderPass = VK_NULL_HANDLE;
+    m_postRenderPass = VK_NULL_HANDLE;
     m_scenePipelineLayout = VK_NULL_HANDLE;
     m_scenePipeline = VK_NULL_HANDLE;
     m_msaaImage = VK_NULL_HANDLE;
@@ -186,9 +186,9 @@ void Vulkan::Shutdown() {
         m_descriptorSetLayout = VK_NULL_HANDLE;
     }
 
-    if (m_renderPass != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
-        m_renderPass = VK_NULL_HANDLE;
+    if (m_postRenderPass != VK_NULL_HANDLE) {
+        vkDestroyRenderPass(m_device, m_postRenderPass, nullptr);
+        m_postRenderPass = VK_NULL_HANDLE;
     }
 
     if (m_framebuffer != VK_NULL_HANDLE) {
@@ -269,20 +269,20 @@ VkQueue& Vulkan::GetGraphicsQueue() {
     return m_graphicsQueue;
 }
 
-VkRenderPass& Vulkan::GetRenderPass() {
-    return m_renderPass;
-}
-
-VkRenderPass& Vulkan::GetOffscreenRenderPass() {
-    return m_offscreenRenderPass;
-}
-
-VkRenderPass& Vulkan::GetMSAARenderPass() {
-    return m_msaaRenderPass;
+VkRenderPass& Vulkan::GetSceneRenderPass() {
+    return m_sceneRenderPass;
 }
 
 VkExtent2D& Vulkan::GetExtent() {
     return m_swapChainExtent;
+}
+
+bool Vulkan::IsPipelineDirty() {
+    return m_pipelineDirty;
+}
+
+void Vulkan::ClearPipelineDirty() {
+    m_pipelineDirty = false;
 }
 
 VkCommandBuffer Vulkan::BeginScene(GLFWwindow* window) {
@@ -329,17 +329,19 @@ VkCommandBuffer Vulkan::BeginScene(GLFWwindow* window) {
     renderPassInfo.renderArea.extent = {SETTINGS.WIDTH, SETTINGS.HEIGHT};
 
     if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
-        renderPassInfo.renderPass = m_offscreenRenderPass;
+        m_sceneRenderPass = m_offscreenRenderPass;
     } else {
-        renderPassInfo.renderPass = m_msaaRenderPass;
+        m_sceneRenderPass = m_msaaRenderPass;
     }
+
+    renderPassInfo.renderPass = m_sceneRenderPass;
 
     VkClearValue clearColor = {{{0.0f, 0.0f, 1.0f, 1.0f}}};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
     vkCmdBeginRenderPass(m_commandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    //vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_scenePipeline);
+    vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_scenePipeline);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
@@ -362,9 +364,7 @@ VkCommandBuffer Vulkan::BeginScene(GLFWwindow* window) {
 
 void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
 
-    m_commandBuffers[m_currentFrame] = cmd;
-
-    vkCmdEndRenderPass(m_commandBuffers[m_currentFrame]);
+    vkCmdEndRenderPass(cmd);
 
 
     // =========================================================
@@ -373,7 +373,7 @@ void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_renderPass;
+    renderPassInfo.renderPass = m_postRenderPass;
     renderPassInfo.framebuffer = m_swapChainFramebuffers[m_imageIndex];
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = m_swapChainExtent;
@@ -382,14 +382,14 @@ void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
-    vkCmdBeginRenderPass(m_commandBuffers[m_currentFrame], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     // POST PROCESS
-    vkCmdBindPipeline(m_commandBuffers[m_currentFrame], VK_PIPELINE_BIND_POINT_GRAPHICS, m_postPipeline);
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_postPipeline);
 
     // descriptor set (tekstura)
     vkCmdBindDescriptorSets(
-        m_commandBuffers[m_currentFrame],
+        cmd,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         m_postPipelineLayout,
         0,
@@ -426,12 +426,12 @@ void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
         viewport.height = height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &viewport);
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {static_cast<int>(x), static_cast<int>(y)};
         scissor.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-        vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &scissor);
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
 
     } else {
 
@@ -442,19 +442,19 @@ void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
         viewport.height = static_cast<float>(m_swapChainExtent.height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(m_commandBuffers[m_currentFrame], 0, 1, &viewport);
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {0, 0};
         scissor.extent = {m_swapChainExtent.width, m_swapChainExtent.height};
-        vkCmdSetScissor(m_commandBuffers[m_currentFrame], 0, 1, &scissor);
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
     }
 
-    vkCmdDraw(m_commandBuffers[m_currentFrame], 3, 1, 0, 0);
+    vkCmdDraw(cmd, 3, 1, 0, 0);
 
-    vkCmdEndRenderPass(m_commandBuffers[m_currentFrame]);
+    vkCmdEndRenderPass(cmd);
 
-    VK_CHECK(vkEndCommandBuffer(m_commandBuffers[m_currentFrame]));
+    VK_CHECK(vkEndCommandBuffer(cmd));
     // ***********************************************************************
     // ZAKOŃCZENIE COMMAND BUFFER
     // ***********************************************************************
@@ -528,6 +528,9 @@ void Vulkan::SetMSAA(VkSampleCountFlagBits msaa) {
     SETTINGS.MSAA_SAMPLES = msaa;
 
     RecreatePipeline();
+    m_pipelineDirty = true;
+
+    std::cout << "MSAA samples: " << SETTINGS.MSAA_SAMPLES << std::endl;
 
 }
 
@@ -536,6 +539,12 @@ void Vulkan::SetFilter(VkFilter filter) {
     SETTINGS.FILTER = filter;
 
     RecreateSampler();
+
+    if (SETTINGS.FILTER == VK_FILTER_LINEAR) {
+        std::cout << "Filter set to: LINEAR" << std::endl;
+    } else {
+        std::cout << "Filter set to: NEAREST" << std::endl;
+    }
 
 }
 
@@ -561,7 +570,7 @@ void Vulkan::SetFullscreenEnabled(GLFWwindow* window, bool value) {
     glfwGetWindowContentScale(window, &scaleX, &scaleY);
 
     if (SETTINGS.FULLSCREEN) {
-        glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+        glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, GLFW_DONT_CARE);
     } else {
         glfwSetWindowMonitor(window, nullptr, 0, 0, static_cast<int>(static_cast<float>(SETTINGS.WIDTH) / scaleX), static_cast<int>(static_cast<float>(SETTINGS.HEIGHT)/ scaleY), GLFW_DONT_CARE);
     }
@@ -672,9 +681,7 @@ void Vulkan::SetupDebugMessenger() {
     if (enableValidationLayers) {
         VkDebugUtilsMessengerCreateInfoEXT createInfo;
         PopulateDebugMessengerCreateInfo(createInfo);
-        if (CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger) != VK_SUCCESS) {
-            throw std::runtime_error("Failed to set up debug messenger!");
-        }
+        VK_CHECK(CreateDebugUtilsMessengerEXT(m_instance, &createInfo, nullptr, &m_debugMessenger));
     }
 
 }
@@ -1334,10 +1341,12 @@ void Vulkan::CreateFramebuffer() {
     framebufferInfo.layers = 1;
 
     if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
-        framebufferInfo.renderPass = m_offscreenRenderPass;
+        m_sceneRenderPass = m_offscreenRenderPass;
     } else {
-        framebufferInfo.renderPass = m_msaaRenderPass;
+        m_sceneRenderPass = m_msaaRenderPass;
     }
+
+    framebufferInfo.renderPass = m_sceneRenderPass;
 
     VkImageView attachments[2];
 
@@ -1399,7 +1408,7 @@ void Vulkan::CreateRenderPass() {
     renderPassInfo.dependencyCount = 1;
     renderPassInfo.pDependencies = &dependency;
 
-    VK_CHECK(vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass));
+    VK_CHECK(vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_postRenderPass));
 
 }
 
@@ -1521,11 +1530,13 @@ void Vulkan::CreateScenePipeline() {
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
-        pipelineInfo.renderPass = m_offscreenRenderPass;
-    } else {
-        pipelineInfo.renderPass = m_msaaRenderPass;
-    }
+    //if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
+    //    m_sceneRenderPass = m_offscreenRenderPass;
+    //} else {
+    //    m_sceneRenderPass = m_msaaRenderPass;
+    //}
+
+    pipelineInfo.renderPass = m_sceneRenderPass;
 
     VK_CHECK(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_scenePipeline));
 
@@ -1619,7 +1630,7 @@ void Vulkan::CreatePostPipeline() {
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = m_postPipelineLayout;
-    pipelineInfo.renderPass = m_renderPass;
+    pipelineInfo.renderPass = m_postRenderPass;
 
     VK_CHECK(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_postPipeline));
 
@@ -1692,8 +1703,12 @@ void Vulkan::CreateDescriptorSet() {
     // Opis obrazu (tekstury)
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = m_offscreenImageView;
     imageInfo.sampler = m_sampler;
+    //if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
+        imageInfo.imageView = m_offscreenImageView;
+    //} else {
+    //    imageInfo.imageView = m_msaaImageView;
+   // }
 
     // Update descriptor seta
     VkWriteDescriptorSet descriptorWrite{};
@@ -1741,7 +1756,7 @@ void Vulkan::CreateFramebuffers() {
 
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.renderPass = m_renderPass;
+        framebufferInfo.renderPass = m_postRenderPass;
         framebufferInfo.attachmentCount = 1;
         framebufferInfo.pAttachments = attachments;
         framebufferInfo.width = m_swapChainExtent.width;
@@ -1859,6 +1874,8 @@ void Vulkan::RecreatePipeline() {
         m_msaaMemory = VK_NULL_HANDLE;
     }
 
+
+
     // Tworzenie nowego
     CreateOffscreenResources();
     CreateMSAAResources();
@@ -1928,7 +1945,7 @@ std::vector<char> Vulkan::ReadFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file!");
+        throw std::runtime_error("Failed to open file: " + filename);
     }
 
     size_t fileSize = (size_t) file.tellg();

@@ -74,20 +74,14 @@ void System::InitializeWindow() {
         glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-        m_window = glfwCreateWindow(1, 1, SETTINGS.TITLE.c_str(), nullptr, nullptr);
-
         float scaleX, scaleY;
         glfwGetWindowContentScale(m_window, &scaleX, &scaleY);
 
-        int xpos = (mode->width - SETTINGS.WIDTH) / 2;
-        int ypos = (mode->height - SETTINGS.HEIGHT) / 2;
-
-        glfwSetWindowMonitor(m_window, nullptr, xpos, ypos, SETTINGS.WIDTH / scaleX, SETTINGS.HEIGHT / scaleY, GLFW_DONT_CARE);
+        m_window = glfwCreateWindow(SETTINGS.WIDTH / scaleX, SETTINGS.HEIGHT / scaleY, SETTINGS.TITLE.c_str(), nullptr, nullptr);
 
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+
 
     }
 
@@ -128,14 +122,14 @@ void System::Loop() {
             i++;
             if (i > (size-1)) i = (size-1);
             m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h);
-            std::cout << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
+            std::cout << "Resolution set to: : " << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
         }
 
         if (m_input->IsPressed(GLFW_KEY_MINUS)){
             i--;
             if (i < 0) i = 0;
             m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h);
-            std::cout << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
+            std::cout << "Resolution set to: " << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
         }
 
         // MSAA
@@ -177,12 +171,28 @@ void System::Loop() {
         // FULLSCREEN/WINDOWED
         static bool fullscreen = true;
         if (m_input->IsPressed(GLFW_KEY_W)) {
-            if (fullscreen) {
-                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, false);
-                fullscreen = false;
-            } else {
+            if (!fullscreen) {
+                // FULLSCREEN
+                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+                glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
+                glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
+                GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+                glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+                glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 m_graphics->m_vulkan->SetFullscreenEnabled(m_window, true);
                 fullscreen = true;
+            } else {
+                // WINDOWED
+                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+                glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
+                glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
+                float scaleX, scaleY;
+                glfwGetWindowContentScale(m_window, &scaleX, &scaleY);
+                glfwSetWindowMonitor(m_window, nullptr, 0, 0, SETTINGS.WIDTH / scaleX, SETTINGS.HEIGHT / scaleY, GLFW_DONT_CARE);
+                glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, false);
+                fullscreen = false;
             }
         }
 

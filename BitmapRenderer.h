@@ -21,6 +21,7 @@ public:
     void SetBitmap(Bitmap& bitmap);
     void Draw(VkCommandBuffer& cmdBuffer);
     void SetPosition(float x, float y, float width, float height);
+    void RecreatePipeline(VkRenderPass& renderPass, VkExtent2D& extent);
 
 private:
     VkDevice m_device;

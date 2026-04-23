@@ -21,12 +21,14 @@ public:
     VkPhysicalDevice& GetPhysicalDevice();
     VkCommandPool& GetCommandPool();
     VkQueue& GetGraphicsQueue();
-    VkRenderPass& GetRenderPass();
-    VkRenderPass& GetOffscreenRenderPass();
-    VkRenderPass& GetMSAARenderPass();
+    VkRenderPass& GetSceneRenderPass();
     VkExtent2D& GetExtent();
+    bool IsPipelineDirty();
+    void ClearPipelineDirty();
+
     VkCommandBuffer BeginScene(GLFWwindow* window);
     void EndScene(GLFWwindow* window, VkCommandBuffer cmd);
+
     void SetResolution(GLFWwindow* window, uint32_t width, uint32_t height);
     void SetMSAA(VkSampleCountFlagBits msaa);
     void SetFilter(VkFilter filter);
@@ -79,10 +81,13 @@ private:
     VkImage m_msaaImage;
     VkDeviceMemory m_msaaMemory;
     VkImageView m_msaaImageView;
+
     VkRenderPass m_offscreenRenderPass;
     VkRenderPass m_msaaRenderPass;
+    VkRenderPass m_sceneRenderPass;
+    VkRenderPass m_postRenderPass;
+
     VkFramebuffer m_framebuffer;
-    VkRenderPass m_renderPass;
     VkDescriptorSetLayout m_descriptorSetLayout;
     VkPipelineLayout m_scenePipelineLayout;
     VkPipeline m_scenePipeline;
@@ -102,6 +107,7 @@ private:
     uint32_t m_currentFrame = 0;
     uint32_t m_imageIndex = 0;
     bool m_framebufferResized = false;
+    bool m_pipelineDirty = false;
 
     void CreateInstance();
     bool CheckValidationLayerSupport();

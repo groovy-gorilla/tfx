@@ -1,8 +1,6 @@
 #include "ErrorDialog.h"
-
-#include <cstring>
-
 #include "Settings.h"
+#include <cstring>
 #include <sstream>
 
 [[noreturn]] void VulkanThrowError(const char* call, VkResult result, const char* file, int line) {
@@ -20,7 +18,7 @@
 }
 
 void ShowErrorDialog(const std::string& errorMessage) {
-    system(("zenity --error --no-wrap --text=\"\n<b>" + SETTINGS.TITLE + " Error!</b>\n\n" + errorMessage + "\" --title='' --icon=dialog-error --ok-label='CLOSE'").c_str());
+    system(("zenity --error --text=\"\n<b>" + SETTINGS.TITLE + " Error!</b>\n\n" + errorMessage + "\n\" --title='' --icon=dialog-error --ok-label='CLOSE'").c_str());
 }
 
 std::string EscapeMarkup(const std::string& text) {

@@ -21,9 +21,6 @@ Texture::~Texture() = default;
 
 void Texture::Initialize(VkDevice& device, VkPhysicalDevice& physicalDevice, VkCommandPool& commandPool, VkQueue& graphicsQueue, const std::string& filename, TextureType type) {
 
-    std::cout << "ENTER INIT" << std::endl;
-    std::cout << "this: " << this << std::endl;
-
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingMemory;
 
@@ -47,6 +44,7 @@ void Texture::Initialize(VkDevice& device, VkPhysicalDevice& physicalDevice, VkC
     m_format = (VkFormat)ktxTex->vkFormat;
 
     // Wypisuje na konsolę informacje o teksturze
+    std::cout << "TEXTURE INFO" << "\n";
     std::cout << "Filename: " << filename << "\n";
     std::cout << "Width: " << width << "\n";
     std::cout << "Height: " << height << "\n";

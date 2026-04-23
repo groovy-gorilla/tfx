@@ -1,4 +1,7 @@
 #include "Graphics.h"
+
+#include <iostream>
+
 #include "Texture.h"
 #include "Bitmap.h"
 #include "BitmapRenderer.h"
@@ -25,11 +28,12 @@ void Graphics::Initialize(GLFWwindow *window) {
                       m_vulkan->GetGraphicsQueue(),
                       "gruvbox.ktx");
 
-    VkRenderPass& pass = (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) ? m_vulkan->GetOffscreenRenderPass() : m_vulkan->GetMSAARenderPass();
-
     m_bitmapRenderer = new BitmapRenderer;
-    m_bitmapRenderer->Initialize(m_vulkan->GetDevice(), m_vulkan->GetPhysicalDevice(), pass, m_vulkan->GetExtent());
+    m_bitmapRenderer->Initialize(m_vulkan->GetDevice(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetSceneRenderPass(), m_vulkan->GetExtent());
     m_bitmapRenderer->SetBitmap(*m_bitmap);
+
+    // dlaczego offscreen a wcześniej renderpass - renderpass wywołuje błędy ale koniec konców pokazuje bitmapę
+    // po włączeniu MSAA wysypuje się
 
 }
 
@@ -55,7 +59,12 @@ void Graphics::Shutdown() {
 
 }
 
-void Graphics::Draw(GLFWwindow *window) {
+void Graphics::Draw(GLFWwindow* window) {
+
+    if (m_vulkan->IsPipelineDirty()) {
+        m_bitmapRenderer->RecreatePipeline(m_vulkan->GetSceneRenderPass(), m_vulkan->GetExtent());
+        m_vulkan->ClearPipelineDirty();
+    }
 
     VkCommandBuffer cmd =  m_vulkan->BeginScene(window);
 
@@ -63,5 +72,7 @@ void Graphics::Draw(GLFWwindow *window) {
     m_bitmapRenderer->Draw(cmd);
 
     m_vulkan->EndScene(window, cmd);
+
+
 
 }

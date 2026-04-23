@@ -1,9 +1,7 @@
 #include "BitmapRenderer.h"
-
+#include "ErrorDialog.h"
 #include <array>
 #include <cstring>
-
-#include "ErrorDialog.h"
 #include <vector>
 
 BitmapRenderer::BitmapRenderer() {
@@ -131,9 +129,7 @@ void BitmapRenderer::CreateDescriptorSetLayout() {
     info.bindingCount = 1;
     info.pBindings = &binding;
 
-    if (vkCreateDescriptorSetLayout(m_device, &info, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("BitmapRenderer: Failed to create descriptor set layout");
-    }
+    VK_CHECK(vkCreateDescriptorSetLayout(m_device, &info, nullptr, &m_descriptorSetLayout));
 
 }
 
@@ -149,9 +145,7 @@ void BitmapRenderer::CreateDescriptorPool() {
     info.pPoolSizes = &poolSize;
     info.maxSets = 1;
 
-    if (vkCreateDescriptorPool(m_device, &info, nullptr, &m_descriptorPool) != VK_SUCCESS) {
-        throw std::runtime_error("BitmapRenderer: Failed to create descriptor pool");
-    }
+    VK_CHECK(vkCreateDescriptorPool(m_device, &info, nullptr, &m_descriptorPool));
 
 }
 
@@ -163,9 +157,7 @@ void BitmapRenderer::CreateDescriptorSet() {
     alloc.descriptorSetCount = 1;
     alloc.pSetLayouts = &m_descriptorSetLayout;
 
-    if (vkAllocateDescriptorSets(m_device, &alloc, &m_descriptorSet) != VK_SUCCESS) {
-        throw std::runtime_error("BitmapRenderer: Failed to allocate descriptor set");
-    }
+    VK_CHECK(vkAllocateDescriptorSets(m_device, &alloc, &m_descriptorSet));
 
 }
 
@@ -279,7 +271,7 @@ void BitmapRenderer::CreatePipeline(VkRenderPass renderPass, VkExtent2D extent) 
     // Multisampling
     VkPipelineMultisampleStateCreateInfo multisampling{};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    multisampling.rasterizationSamples = SETTINGS.MSAA_SAMPLES;
 
     // Color blending
     VkPipelineColorBlendAttachmentState colorBlend{};
@@ -335,6 +327,16 @@ void BitmapRenderer::CreatePipeline(VkRenderPass renderPass, VkExtent2D extent) 
     vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
     vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
 }
+
+void BitmapRenderer::RecreatePipeline(VkRenderPass& renderPass, VkExtent2D& extent) {
+
+    vkDestroyPipeline(m_device, m_pipeline, nullptr);
+    vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+
+    CreatePipeline(renderPass, extent);
+
+}
+
 
 void BitmapRenderer::Draw(VkCommandBuffer& cmdBuffer) {
 
@@ -393,7 +395,7 @@ std::vector<char> BitmapRenderer::ReadFile(const std::string& filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file!");
+        throw std::runtime_error("Failed to open file: " + filename);
     }
 
     size_t fileSize = (size_t) file.tellg();
@@ -521,4 +523,3 @@ void BitmapRenderer::CreateIndexBuffer(VkPhysicalDevice physicalDevice) {
     vkUnmapMemory(m_device, m_indexBufferMemory);
 
 }
-
