@@ -24,6 +24,14 @@ Main
 Main --> System
 Main --> ErrorDialog
 Main --> Settings
+
+subgraph System
+        Graphics
+        Input
+    end
+
+    System --> Graphics
+    System --> Input
 ```
 
 ```
