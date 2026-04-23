@@ -27,7 +27,7 @@ config:
         paddingY: 5
     themeVariables:
         treeView:
-            labelFontSize: '8px'
+            labelFontSize: '12px'
             labelColor: '#808080'
             lineColor: '#808080'
 ---
