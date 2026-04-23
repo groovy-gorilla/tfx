@@ -19,19 +19,9 @@ The engine will be used as a foundation for future game projects.
 
 ```mermaid
 graph LR
-Main
-
-Main --> System
-Main --> ErrorDialog
-Main --> Settings
-
-subgraph System
-        Graphics
-        Input
-    end
-
-    System --> Graphics
-    System --> Input
+treeView-beta
+"packages"
+    "coe"
 ```
 
 ```
