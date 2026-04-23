@@ -22,7 +22,7 @@ The engine will be used as a foundation for future game projects.
 ---
 config:
     treeView:
-        rowIndent: 20
+        rowIndent: 1
         lineThickness: 1
     themeVariables:
         treeView:
