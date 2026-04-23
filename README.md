@@ -22,11 +22,11 @@ The engine will be used as a foundation for future game projects.
 ---
 config:
     treeView:
-        rowIndent: 80
-        lineThickness: 3
+        rowIndent: 20
+        lineThickness: 1
     themeVariables:
         treeView:
-            labelFontSize: '20px'
+            labelFontSize: '8px'
             labelColor: '#FF0000'
             lineColor: '#00FF00'
 ---
