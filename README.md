@@ -19,16 +19,17 @@ The engine will be used as a foundation for future game projects.
 
 ```mermaid
 ---
----
 config:
     treeView:
         rowIndent: 20
         lineThickness: 1
+        paddingX: 5
+        paddingY: 5
     themeVariables:
         treeView:
             labelFontSize: '8px'
-            labelColor: '#808080'
-            lineColor: '#808080'
+            labelColor: '#FF0000'
+            lineColor: '#00FF00'
 ---
 treeView-beta
     "packages"
