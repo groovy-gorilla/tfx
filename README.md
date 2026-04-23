@@ -28,8 +28,8 @@ config:
     themeVariables:
         treeView:
             labelFontSize: '8px'
-            labelColor: '#FF0000'
-            lineColor: '#00FF00'
+            labelColor: '#808080'
+            lineColor: '#808080'
 ---
 treeView-beta
     "packages"
