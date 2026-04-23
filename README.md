@@ -18,9 +18,23 @@ The engine will be used as a foundation for future game projects.
 ## Project Structure
 
 ```mermaid
+---
+---
+config:
+    treeView:
+        rowIndent: 80
+        lineThickness: 3
+    themeVariables:
+        treeView:
+            labelFontSize: '20px'
+            labelColor: '#FF0000'
+            lineColor: '#00FF00'
+---
 treeView-beta
-"packages"
-    "coe"
+    "packages"
+        "mermaid"
+            "src"
+        "parser"
 ```
 
 ```
