@@ -16,6 +16,13 @@ The engine will be used as a foundation for future game projects.
 - Expandable for future features
 
 ## Project Structure
+```mermaid
+graph TD
+Main --> System
+Main --> ErrorDialog
+Main --> Settings
+```
+
 ```
 Main
  ├── System
