@@ -31,7 +31,7 @@ Main
  │    │    └── Renderer
  │    └── Input
  ├── ErrorDialog
- └── Global
+ └── Settings
 ```
 
 ## Build
