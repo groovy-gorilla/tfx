@@ -82,7 +82,7 @@ Vulkan::Vulkan() {
 
 Vulkan::~Vulkan() = default;
 
-void Vulkan::Initialize(GLFWwindow *window) {
+void Vulkan::Initialize(GLFWwindow* window) {
 
     glfwSetWindowUserPointer(window, this);
     glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);

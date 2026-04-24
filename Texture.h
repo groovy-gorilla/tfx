@@ -1,7 +1,6 @@
 #pragma once
 
 #include <ktx.h>
-
 #include "Vulkan.h"
 #include <vulkan/vulkan.h>
 #include <string>

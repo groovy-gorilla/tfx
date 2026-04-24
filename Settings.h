@@ -16,5 +16,3 @@ struct Settings {
 };
 extern Settings SETTINGS;
 
-
-

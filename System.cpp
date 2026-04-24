@@ -53,18 +53,19 @@ void System::InitializeWindow() {
         std::cerr << "GLFW Vulkan not supported!" << std::endl;
     }
 
+    // Pobiera tablicę monitorów
+    int count = 0;
+    GLFWmonitor** monitors = glfwGetMonitors(&count);
+    GLFWmonitor* monitor = monitors[0]; // --> Get Primary Monitor
+    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
     if (SETTINGS.FULLSCREEN) {
 
         // FULLSCREEN
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
-
-        GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-        const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
         m_window = glfwCreateWindow(mode->width, mode->height, SETTINGS.TITLE.c_str(), monitor, nullptr);
-
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     } else {
@@ -72,16 +73,11 @@ void System::InitializeWindow() {
         // WINDOWED
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
+        glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
         float scaleX, scaleY;
         glfwGetWindowContentScale(m_window, &scaleX, &scaleY);
-
         m_window = glfwCreateWindow(SETTINGS.WIDTH / scaleX, SETTINGS.HEIGHT / scaleY, SETTINGS.TITLE.c_str(), nullptr, nullptr);
-
         glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-
-
 
     }
 
@@ -169,30 +165,52 @@ void System::Loop() {
         }
 
         // FULLSCREEN/WINDOWED
+
+        // TU WSZYSTKO JEST ŹLE
+        // glfwWindowHint to takie ustawienia które działają tylko na glfwCreateWindow
+        // Po naciśnięciu W i przełączaniu FULLSCREE/WINDOWED windowHint GLFW_DECORATED już się nie zmienia
+        // Trzeba tworzyć okno za każdym razem
+        // glfwDestroyWindow
+        // glfwWindowHint DECORATED
+        // glfwCreateWindow
+        // recreate VkSurfaceKHR
+        // recreate swapchain
+        // recreate ....
+
         static bool fullscreen = true;
         if (m_input->IsPressed(GLFW_KEY_W)) {
             if (!fullscreen) {
+
                 // FULLSCREEN
-                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+                //glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
                 glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-                glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
+                //glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
                 GLFWmonitor* monitor = glfwGetPrimaryMonitor();
                 const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+
                 glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
+                glfwSetWindowAttrib(m_window, GLFW_DECORATED, GLFW_FALSE);
                 glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
                 m_graphics->m_vulkan->SetFullscreenEnabled(m_window, true);
                 fullscreen = true;
+
             } else {
+
                 // WINDOWED
-                glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+                //glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
                 glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-                glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
+                //glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
                 float scaleX, scaleY;
                 glfwGetWindowContentScale(m_window, &scaleX, &scaleY);
+
                 glfwSetWindowMonitor(m_window, nullptr, 0, 0, SETTINGS.WIDTH / scaleX, SETTINGS.HEIGHT / scaleY, GLFW_DONT_CARE);
+                glfwSetWindowAttrib(m_window, GLFW_DECORATED, GLFW_TRUE);
                 glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
                 m_graphics->m_vulkan->SetFullscreenEnabled(m_window, false);
                 fullscreen = false;
+
             }
         }
 
@@ -207,4 +225,3 @@ void System::Loop() {
     vkDeviceWaitIdle(m_graphics->m_vulkan->GetDevice());
 
 }
-
