@@ -1,5 +1,4 @@
-#ifndef FONTCLASS_H
-#define FONTCLASS_H
+#pragma once
 #include "Texture.h"
 
 struct FontType {
@@ -22,4 +21,3 @@ private:
 
 };
 
-#endif //FONTCLASS_H

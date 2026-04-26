@@ -1,3 +1,10 @@
+- okno nie może być w rozdzielczości akiej jak ekran
+  > gdy uruchamia się windowed to musi zmniejszyć rozdzielczość do niższej
+  > weź to pod uwagę również przy przełączaniu windowed/fullscreen
+  >
+- Renderer
+- Sprawdzenie kodu zgodnie z Vulkan Tutorial
+- Po zmniejszeniu do WINDOWED znika cień okna
 - FontClass
 - TextClass
 - FPSClass wyświetlanie klatek na sekundę

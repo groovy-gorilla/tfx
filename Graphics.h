@@ -1,20 +1,17 @@
-#ifndef GRAPHICSCLASS_H
-#define GRAPHICSCLASS_H
-#include <GLFW/glfw3.h>
+#pragma once
 #include "Vulkan.h"
 #include "Bitmap.h"
 #include "BitmapRenderer.h"
-
 
 class Graphics {
 
 public:
     Graphics();
     ~Graphics();
-    void Initialize(GLFWwindow *window);
+    void Initialize(SDL_Window* window);
     void Shutdown();
 
-    void Draw(GLFWwindow *window);
+    void Draw(SDL_Window* window);
 
     Vulkan* m_vulkan;
 
@@ -24,5 +21,3 @@ private:
     BitmapRenderer* m_bitmapRenderer;
 
 };
-
-#endif //GRAPHICSCLASS_H

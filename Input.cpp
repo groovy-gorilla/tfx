@@ -1,54 +1,38 @@
 #include "Input.h"
 
-#include <cstring>
-#include <GLFW/glfw3.h>
-
-Input::Input() {
-
-    memset(m_prev, 0, sizeof(m_prev));
-    memset(m_curr, 0, sizeof(m_curr));
-
-}
+Input::Input() {}
 
 Input::~Input() = default;
 
 void Input::Initialize() {
 
-
-
-}
-
-void Input::Shutdown() {
-
-
+    currentKeys = SDL_GetKeyboardState(&keyCount);
+    prevKeys.resize(keyCount, 0);
 
 }
 
-void Input::BeginProcessInput(GLFWwindow* window) {
+void Input::BeginFrame() {
 
-    for (int i = 0; i < GLFW_KEY_LAST; ++i) {
-        m_curr[i] = glfwGetKey(window, i) == GLFW_PRESS;
-    }
+    memcpy(prevKeys.data(), currentKeys, keyCount);
 
 }
 
-void Input::EndProcessInput() {
+void Input::EndFrame() {
 
-    memcpy(m_prev, m_curr, sizeof(m_curr));
+    currentKeys = SDL_GetKeyboardState(nullptr);
 
 }
 
-bool Input::IsPressed(int key) {
-    if (key < 0 || key >= GLFW_KEY_LAST) return false;
-    return m_curr[key] && !m_prev[key];
+bool Input::IsKeyPressed(SDL_Scancode key) const {
+    return currentKeys[key] && !prevKeys[key];
 }
 
-bool Input::IsHeld(int key) {
-    return m_curr[key];
+bool Input::IsKeyDown(SDL_Scancode key) const {
+    return currentKeys[key];
 }
 
-bool Input::IsReleased(int key) {
-    return !m_curr[key] && m_prev[key];
+bool Input::IsKeyReleased(SDL_Scancode key) const {
+    return !currentKeys[key] && prevKeys[key];
 }
 
 

@@ -1,5 +1,4 @@
 #include "Font.h"
-
 #include <stdexcept>
 
 Font::Font() {

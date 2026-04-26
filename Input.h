@@ -1,24 +1,27 @@
-#ifndef INPUTCLASS_H
-#define INPUTCLASS_H
-#include <GLFW/glfw3.h>
+#pragma once
+#include <SDL3/SDL.h>
+#include <vector>
 
 class Input {
 
 public:
     Input();
     ~Input();
+
     void Initialize();
-    void Shutdown();
-    void BeginProcessInput(GLFWwindow* window);
-    void EndProcessInput();
-    bool IsPressed(int key);
-    bool IsHeld(int key);
-    bool IsReleased(int key);
+
+    void BeginFrame();
+    void EndFrame();
+
+    // KEYBOARD
+    bool IsKeyPressed(SDL_Scancode key) const;
+    bool IsKeyDown(SDL_Scancode key) const;
+    bool IsKeyReleased(SDL_Scancode key) const;
 
 private:
-    bool m_prev[GLFW_KEY_LAST] = {};
-    bool m_curr[GLFW_KEY_LAST] = {};
+    int keyCount = 0;
+
+    const bool* currentKeys = nullptr;
+    std::vector<uint8_t> prevKeys;
 
 };
-
-#endif //INPUTCLASS_H

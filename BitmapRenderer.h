@@ -1,9 +1,7 @@
 #pragma once
-
 #include "Bitmap.h"
 #include "Settings.h"
 #include <vulkan/vulkan.h>
-
 
 struct Vertex {
     float position[2];

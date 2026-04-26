@@ -2,7 +2,9 @@
 #include "ErrorDialog.h"
 #include <array>
 #include <cstring>
+#include <stdexcept>
 #include <vector>
+#include <fstream>
 
 BitmapRenderer::BitmapRenderer() {
 

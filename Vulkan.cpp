@@ -8,6 +8,7 @@
 #include <limits>
 #include <set>
 #include <stdexcept>
+#include <SDL3/SDL_vulkan.h>
 
 // validation layers inline functions
 static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger) {
@@ -28,13 +29,6 @@ static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
     if (func != nullptr) {
         func(instance, debugMessenger, pAllocator);
     }
-
-}
-
-static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-
-    auto app = static_cast<Vulkan*>(glfwGetWindowUserPointer(window));
-    app->SetFramebufferResized(true);
 
 }
 
@@ -82,10 +76,8 @@ Vulkan::Vulkan() {
 
 Vulkan::~Vulkan() = default;
 
-void Vulkan::Initialize(GLFWwindow* window) {
+void Vulkan::Initialize(SDL_Window* window) {
 
-    glfwSetWindowUserPointer(window, this);
-    glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
     CreateInstance();
     SetupDebugMessenger();
     CreateSurface(window);
@@ -285,7 +277,7 @@ void Vulkan::ClearPipelineDirty() {
     m_pipelineDirty = false;
 }
 
-VkCommandBuffer Vulkan::BeginScene(GLFWwindow* window) {
+VkCommandBuffer Vulkan::BeginScene(SDL_Window* window) {
 
     VkResult result;
 
@@ -362,7 +354,7 @@ VkCommandBuffer Vulkan::BeginScene(GLFWwindow* window) {
 
 }
 
-void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
+void Vulkan::EndScene(SDL_Window *window, VkCommandBuffer cmd) {
 
     vkCmdEndRenderPass(cmd);
 
@@ -448,6 +440,7 @@ void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
         scissor.offset = {0, 0};
         scissor.extent = {m_swapChainExtent.width, m_swapChainExtent.height};
         vkCmdSetScissor(cmd, 0, 1, &scissor);
+
     }
 
     vkCmdDraw(cmd, 3, 1, 0, 0);
@@ -502,17 +495,19 @@ void Vulkan::EndScene(GLFWwindow *window, VkCommandBuffer cmd) {
 
 }
 
-void Vulkan::SetResolution(GLFWwindow* window, uint32_t width, uint32_t height) {
+void Vulkan::SetResolution(SDL_Window* window, uint32_t width, uint32_t height, float scale) {
 
     SETTINGS.WIDTH = width;
     SETTINGS.HEIGHT = height;
 
-    float scaleX, scaleY;
-    glfwGetWindowContentScale(window, &scaleX, &scaleY);
-
     if (!SETTINGS.FULLSCREEN) {
-        glfwSetWindowMonitor(window, nullptr, 0, 0, static_cast<int>(static_cast<float>(SETTINGS.WIDTH) / scaleX), static_cast<int>(static_cast<float>(SETTINGS.HEIGHT) / scaleY), GLFW_DONT_CARE);
+        SDL_SetWindowSize(window, static_cast<float>(width) / scale, static_cast<float>(height) / scale);
+        SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED );
+        SDL_SetWindowBordered(window, true);
+        SDL_RaiseWindow(window);
     }
+
+    SDL_PumpEvents();
 
     RecreateSwapChain(window);
     RecreatePipeline();
@@ -554,26 +549,30 @@ void Vulkan::SetFramebufferResized(bool value) {
 
 }
 
-void Vulkan::SetAspectRatioEnabled(bool value) {
+void Vulkan::SetAspectRatioEnabled(SDL_Window* window,bool value) {
 
     SETTINGS.KEEP_ASPECT_RATIO = value;
 
+    RecreateSwapChain(window);
+    RecreatePipeline();
+
 }
 
-void Vulkan::SetFullscreenEnabled(GLFWwindow* window, bool value) {
+void Vulkan::SetFullscreenEnabled(SDL_Window* window, bool value, SDL_DisplayMode* mode, float scaling) {
 
-    SETTINGS.FULLSCREEN = value;
-
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    float scaleX, scaleY;
-    glfwGetWindowContentScale(window, &scaleX, &scaleY);
+    SDL_SetWindowFullscreen(window, value);
 
     if (SETTINGS.FULLSCREEN) {
-        glfwSetWindowMonitor(window, monitor, 0, 0, mode->width, mode->height, GLFW_DONT_CARE);
+        SDL_SetWindowFullscreenMode(window, mode);
+        SetAspectRatioEnabled(window, SETTINGS.KEEP_ASPECT_RATIO);
     } else {
-        glfwSetWindowMonitor(window, nullptr, 0, 0, static_cast<int>(static_cast<float>(SETTINGS.WIDTH) / scaleX), static_cast<int>(static_cast<float>(SETTINGS.HEIGHT)/ scaleY), GLFW_DONT_CARE);
+        SDL_SetWindowSize(window, SETTINGS.WIDTH / scaling, SETTINGS.HEIGHT / scaling);
+        SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+        SDL_SetWindowBordered(window, true);
+        SDL_RaiseWindow(window);
     }
+
+    SDL_PumpEvents();
 
     RecreateSwapChain(window);
 
@@ -593,7 +592,7 @@ void Vulkan::CreateInstance() {
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Vulkan";
+    appInfo.pApplicationName = SETTINGS.TITLE.c_str();
     appInfo.applicationVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
     appInfo.pEngineName = "Indigo";
     appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
@@ -602,12 +601,6 @@ void Vulkan::CreateInstance() {
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
-
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-    createInfo.enabledExtensionCount = glfwExtensionCount;
-    createInfo.ppEnabledExtensionNames = glfwExtensions;
 
     auto extensions = GetRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
@@ -656,11 +649,14 @@ bool Vulkan::CheckValidationLayerSupport() {
 
 std::vector<const char*> Vulkan::GetRequiredExtensions() {
 
-    uint32_t glfwExtensionCount = 0;
-    const char** glfwExtensions;
-    glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+    uint32_t instanceExtensionCount;
 
-    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+    const char* const* sdlExtensions = SDL_Vulkan_GetInstanceExtensions(&instanceExtensionCount);
+    if (!sdlExtensions) {
+        throw std::runtime_error(SDL_GetError());
+    }
+
+    std::vector<const char*> extensions(sdlExtensions, sdlExtensions + instanceExtensionCount);
 
     if (enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
@@ -696,15 +692,17 @@ void Vulkan::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT
 
 }
 
-void Vulkan::CreateSurface(GLFWwindow *window) {
+void Vulkan::CreateSurface(SDL_Window *window) {
 
-    VK_CHECK(glfwCreateWindowSurface(m_instance, window, nullptr, &m_surface));
+    if (!SDL_Vulkan_CreateSurface(window, m_instance, nullptr, &m_surface)) {
+        throw std::runtime_error(SDL_GetError());
+    }
 
 }
 
 void Vulkan::CreateSupportedVideoModes() {
 
-    // Tworzy listę typowych rozdzielczości (4:3, 16:9, 16:10, 21:9, 32:9, 5:4, 3:2)
+    // Tworzy ręczną listę typowych rozdzielczości (4:3, 16:9, 16:10, 21:9, 32:9, 5:4, 3:2)
     m_videoModes = {
         {320, 200, "(16:10)"},
         {320, 240, "(4:3)"},
@@ -753,9 +751,27 @@ void Vulkan::CreateSupportedVideoModes() {
         {7680, 4320, "(16:9)"}    // 8K
     };
 
+    // Pobiera listę rozdzielczości obsługiwanych przez monitor i dodaje do ręcznej listy
+
+
+
+
+
+
+
+
     // Pobiera rozdzielczość natywną monitora
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+    //GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+    //const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+    struct Mode {
+        int width;
+        int height;
+    };
+
+    Mode* mode = new Mode;
+    mode->width = 3440;
+    mode->height = 1440;
+
 
     // Leci po tablicy i usuwa ją oraz wszystkie wyższe.
     m_videoModes.erase(
@@ -961,7 +977,7 @@ void Vulkan::CreateLogicalDevice() {
 
 }
 
-void Vulkan::CreateSwapChain(GLFWwindow *window) {
+void Vulkan::CreateSwapChain(SDL_Window *window) {
 
     SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(m_physicalDevice);
 
@@ -1074,13 +1090,13 @@ VkPresentModeKHR Vulkan::ChooseSwapPresentMode(const std::vector<VkPresentModeKH
 
 }
 
-VkExtent2D Vulkan::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) {
+VkExtent2D Vulkan::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, SDL_Window* window) {
 
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
         int width, height;
-        glfwGetFramebufferSize(window, &width, &height);
+        SDL_GetWindowSize(window, &width, &height);
 
         VkExtent2D actualExtent = {
             static_cast<uint32_t>(width),
@@ -1817,13 +1833,13 @@ void Vulkan::CreateSyncObjects() {
 
 }
 
-void Vulkan::RecreateSwapChain(GLFWwindow* window) {
+void Vulkan::RecreateSwapChain(SDL_Window* window) {
 
-    //int width = 0, height = 0;
-    //while (width == 0 || height == 0) {
-    //    glfwGetFramebufferSize(window, &width, &height);
-    //    glfwWaitEvents();
-    //}
+    int width = 0, height = 0;
+    while (width == 0 || height == 0) {
+        SDL_GetWindowSizeInPixels(window, &width, &height);
+        SDL_PumpEvents();
+    }
 
     vkDeviceWaitIdle(m_device);
 

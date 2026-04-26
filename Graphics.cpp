@@ -1,8 +1,4 @@
 #include "Graphics.h"
-
-#include <iostream>
-
-#include "Texture.h"
 #include "Bitmap.h"
 #include "BitmapRenderer.h"
 
@@ -16,7 +12,7 @@ Graphics::Graphics() {
 
 Graphics::~Graphics() = default;
 
-void Graphics::Initialize(GLFWwindow *window) {
+void Graphics::Initialize(SDL_Window* window) {
 
     m_vulkan = new Vulkan;
     m_vulkan->Initialize(window);
@@ -31,9 +27,6 @@ void Graphics::Initialize(GLFWwindow *window) {
     m_bitmapRenderer = new BitmapRenderer;
     m_bitmapRenderer->Initialize(m_vulkan->GetDevice(), m_vulkan->GetPhysicalDevice(), m_vulkan->GetSceneRenderPass(), m_vulkan->GetExtent());
     m_bitmapRenderer->SetBitmap(*m_bitmap);
-
-    // dlaczego offscreen a wcześniej renderpass - renderpass wywołuje błędy ale koniec konców pokazuje bitmapę
-    // po włączeniu MSAA wysypuje się
 
 }
 
@@ -59,7 +52,7 @@ void Graphics::Shutdown() {
 
 }
 
-void Graphics::Draw(GLFWwindow* window) {
+void Graphics::Draw(SDL_Window* window) {
 
     if (m_vulkan->IsPipelineDirty()) {
         m_bitmapRenderer->RecreatePipeline(m_vulkan->GetSceneRenderPass(), m_vulkan->GetExtent());
@@ -72,7 +65,5 @@ void Graphics::Draw(GLFWwindow* window) {
     m_bitmapRenderer->Draw(cmd);
 
     m_vulkan->EndScene(window, cmd);
-
-
 
 }

@@ -1,11 +1,12 @@
 #include "System.h"
-
+#include "Settings.h"
 #include <algorithm>
 #include <iostream>
-#include "Settings.h"
 
 System::System() {
     m_window = nullptr;
+    m_displays = nullptr;
+    m_currentDisplayMode = nullptr;
     m_graphics = nullptr;
     m_input = nullptr;
 }
@@ -30,7 +31,6 @@ void System::Shutdown() {
     delete m_graphics;
     m_graphics = nullptr;
 
-    m_input->Shutdown();
     delete m_input;
     m_input = nullptr;
 
@@ -46,53 +46,81 @@ void System::Run() {
 
 void System::InitializeWindow() {
 
-    setenv("GTK_THEME", "HighContrastInverse", 1);
+    setenv("GTK_THEME", "Adwaita:dark", 1);
 
-    glfwInit();
-    if (!glfwVulkanSupported()) {
-        std::cerr << "GLFW Vulkan not supported!" << std::endl;
+    // SDL Init
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        throw std::runtime_error(SDL_GetError());
     }
 
-    // Pobiera tablicę monitorów
+    // Pobiera listę monitorów
     int count = 0;
-    GLFWmonitor** monitors = glfwGetMonitors(&count);
-    GLFWmonitor* monitor = monitors[0]; // --> Get Primary Monitor
-    const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-    if (SETTINGS.FULLSCREEN) {
-
-        // FULLSCREEN
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-        glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
-        m_window = glfwCreateWindow(mode->width, mode->height, SETTINGS.TITLE.c_str(), monitor, nullptr);
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-    } else {
-
-        // WINDOWED
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-        glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
-        float scaleX, scaleY;
-        glfwGetWindowContentScale(m_window, &scaleX, &scaleY);
-        m_window = glfwCreateWindow(SETTINGS.WIDTH / scaleX, SETTINGS.HEIGHT / scaleY, SETTINGS.TITLE.c_str(), nullptr, nullptr);
-        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-
+    m_displays = SDL_GetDisplays(&count);
+    if (!m_displays) {
+        throw std::runtime_error(SDL_GetError());
     }
+
+    // Wypisuje listę monitorów
+    for (int i = 0; i < count; i++) {
+        const char* name = SDL_GetDisplayName(m_displays[i]);
+
+        SDL_Rect bounds;
+        SDL_GetDisplayBounds(m_displays[i], &bounds);
+
+        int c = 0;
+        SDL_DisplayMode** m = SDL_GetFullscreenDisplayModes(m_displays[i], &c);
+
+        std::cout << "MONITOR [" << i << "]" << std::endl;
+        std::cout << "   NAME: " << name << std::endl;
+        std::cout << "   POSITION: " << bounds.x << ", " << bounds.y << std::endl;
+        std::cout << "   MODE: " << m[0]->w << "x" << m[0]->h << std::endl;
+    }
+
+    // Wybiera monitor
+    SDL_DisplayID currentDisplay = m_displays[0];   //SDL_GetPrimaryDisplay() - nie działa dobrze
+
+    // Pobiera rozdzielczość aktualnie wyświetlaną przez Linux na wybranym monitorze
+    SDL_DisplayMode** modes = SDL_GetFullscreenDisplayModes(currentDisplay, nullptr);
+    m_currentDisplayMode = modes[0];
+
+    // Wyliczanie skalowania
+    const SDL_DisplayMode* mcurr = SDL_GetCurrentDisplayMode(currentDisplay);
+    m_scaling = static_cast<float>(m_currentDisplayMode->w) / mcurr->w;
+    std::cout << "SCALING: " << m_scaling << std::endl;
+
+    // Tworzy zwykłe okno
+    if (SETTINGS.FULLSCREEN) {
+        m_window = SDL_CreateWindow(SETTINGS.TITLE.c_str(), m_currentDisplayMode->w / m_scaling, m_currentDisplayMode->h / m_scaling, SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN);
+    } else {
+        m_window = SDL_CreateWindow(SETTINGS.TITLE.c_str(), SETTINGS.WIDTH / m_scaling, SETTINGS.HEIGHT / m_scaling, SDL_WINDOW_VULKAN);
+    }
+
+    SDL_SetWindowFullscreenMode(m_window, m_currentDisplayMode);
+
+    //SDL_SetWindowFullscreen(m_window, true);
+    //SDL_RaiseWindow(m_window);
 
 }
 
 void System::ShutdownWindow() {
 
-    glfwDestroyWindow(m_window);
-    glfwTerminate();
+    SDL_free(m_currentDisplayMode);
+    m_currentDisplayMode = nullptr;
+
+    SDL_free(m_displays);
+    m_displays = nullptr;
+
+    SDL_DestroyWindow(m_window);
+    SDL_Quit();
 
 }
 
 void System::Loop() {
 
-    while (!glfwWindowShouldClose(m_window)) {
+    bool running = true;
+    SDL_Event event;
+
+    while (running) {
 
         // RYSOWANIE
         m_graphics->Draw(m_window);
@@ -100,8 +128,55 @@ void System::Loop() {
 
 
         // OBSŁUGA KLAWIATURY
-        glfwPollEvents();
-        m_input->BeginProcessInput(m_window);
+        m_input->BeginFrame();
+
+        // OBSŁUGA ZDARZEŃ OKNA
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:                                   // kliknięcie X w oknie
+                case SDL_EVENT_QUIT:                                                     // zakończenie programu
+                    running = false;
+                    break;
+                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                case SDL_EVENT_WINDOW_RESIZED:                                          // zmiana rozmiaru okna (resized=okno, pixel_size=framebuffer
+                    // ... recreate swapchain
+                    break;
+                case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:                            // zmiana skali w systemie
+                    // ...
+                    break;
+                case SDL_EVENT_WINDOW_MINIMIZED:                                        // minimalizacja okna (utrata fokusa i okno ma wtedy zwykle rozmiar 0x0
+                    // minimized = true;                                                // if (paused) SDL_Delay(10); continue; --> nie renderuję do GPU
+                    break;
+                case SDL_EVENT_WINDOW_RESTORED:                                         // przywrócenie okna z mimimalizacji
+                    // minimized = false;
+                    // recreate swapchain
+                    break;
+                case SDL_EVENT_WINDOW_MAXIMIZED:                                        // maksymalizacja okna
+                    // ...
+                    break;
+                case SDL_EVENT_WINDOW_FOCUS_LOST:                                       // utrata fokusa --> robimy pauzę
+                    // focused = false;                                                 // if (paused) SDL_Delay(10); continue;
+                    // SDL_SetRelativeMouseMode(SDL_FALSE);                             // oddanie kursora myszy --> przywrócnie np. po kliknięciu w okno
+                    // bool paused = minimized || !focused;
+                    break;
+                case SDL_EVENT_WINDOW_FOCUS_GAINED:                                     // przywrócenie fokusa
+                    // focused = true;                                                  // ale co jeśli podczas utraty fokusa doszło np. do zmiany skali?
+                    // SDL_SetRelativeMouseMode(SDL_TRUE);
+                    break;
+                case SDL_EVENT_MOUSE_BUTTON_DOWN:                                       // uchwycenie myszy po kliknięciu nią w okno
+                    // SDL_SetRelativeMouseMode(SDL_TRUE);
+                    break;
+                case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+                    // ...
+                    break;
+                case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+                    // ...
+                    break;
+                default:
+                    // ...
+                    break;
+            }
+        }
 
         // SCREEN RESOLUTION
         int size = m_graphics->m_vulkan->GetVideoModes().size();
@@ -114,23 +189,23 @@ void System::Loop() {
         if (it != m_graphics->m_vulkan->GetVideoModes().end()) {
             i = std::distance(m.begin(), it);
         }
-        if (m_input->IsPressed(GLFW_KEY_EQUAL)) {
+        if (m_input->IsKeyPressed(SDL_SCANCODE_EQUALS)) {
             i++;
             if (i > (size-1)) i = (size-1);
-            m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h);
+            m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h, m_scaling);
             std::cout << "Resolution set to: : " << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
         }
 
-        if (m_input->IsPressed(GLFW_KEY_MINUS)){
+        if (m_input->IsKeyPressed(SDL_SCANCODE_MINUS)){
             i--;
             if (i < 0) i = 0;
-            m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h);
+            m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h, m_scaling);
             std::cout << "Resolution set to: " << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
         }
 
         // MSAA
         static bool msaa = false;
-        if (m_input->IsPressed(GLFW_KEY_M)) {
+        if (m_input->IsKeyPressed(SDL_SCANCODE_M)) {
             if (msaa) {
                 m_graphics->m_vulkan->SetMSAA(VK_SAMPLE_COUNT_1_BIT);
                 msaa = false;
@@ -142,7 +217,7 @@ void System::Loop() {
 
         // FILTER
         static bool filter = false;
-        if (m_input->IsPressed(GLFW_KEY_F)) {
+        if (m_input->IsKeyPressed(SDL_SCANCODE_F)) {
             if (filter) {
                 m_graphics->m_vulkan->SetFilter(VK_FILTER_NEAREST);
                 filter = false;
@@ -153,75 +228,40 @@ void System::Loop() {
         }
 
         // ASPECT RATIO
-        static bool aspect = false;
-        if (m_input->IsPressed(GLFW_KEY_A)) {
-            if (aspect) {
-                m_graphics->m_vulkan->SetAspectRatioEnabled(false);
-                aspect = false;
+        if (m_input->IsKeyPressed(SDL_SCANCODE_A)) {
+            if (SETTINGS.KEEP_ASPECT_RATIO) {
+                m_graphics->m_vulkan->SetAspectRatioEnabled(m_window, false);
             } else {
-                m_graphics->m_vulkan->SetAspectRatioEnabled(true);
-                aspect = true;
+                m_graphics->m_vulkan->SetAspectRatioEnabled(m_window, true);
             }
         }
 
         // FULLSCREEN/WINDOWED
-
-        // TU WSZYSTKO JEST ŹLE
-        // glfwWindowHint to takie ustawienia które działają tylko na glfwCreateWindow
-        // Po naciśnięciu W i przełączaniu FULLSCREE/WINDOWED windowHint GLFW_DECORATED już się nie zmienia
-        // Trzeba tworzyć okno za każdym razem
-        // glfwDestroyWindow
-        // glfwWindowHint DECORATED
-        // glfwCreateWindow
-        // recreate VkSurfaceKHR
-        // recreate swapchain
-        // recreate ....
-
-        static bool fullscreen = true;
-        if (m_input->IsPressed(GLFW_KEY_W)) {
-            if (!fullscreen) {
-
+        if (m_input->IsKeyPressed(SDL_SCANCODE_W)) {
+            if (!SETTINGS.FULLSCREEN) {
                 // FULLSCREEN
-                //glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-                glfwWindowHint(GLFW_DECORATED, GLFW_FALSE);
-                //glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
-                GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-                const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-
-                glfwSetWindowMonitor(m_window, monitor, 0, 0, mode->width, mode->height, mode->refreshRate);
-                glfwSetWindowAttrib(m_window, GLFW_DECORATED, GLFW_FALSE);
-                glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-
-                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, true);
-                fullscreen = true;
-
+                SETTINGS.FULLSCREEN = true;
+                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, SETTINGS.FULLSCREEN, m_currentDisplayMode, m_scaling);
             } else {
-
                 // WINDOWED
-                //glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-                glfwWindowHint(GLFW_DECORATED, GLFW_TRUE);
-                //glfwWindowHint(GLFW_RESIZABLE , GLFW_FALSE);
-                float scaleX, scaleY;
-                glfwGetWindowContentScale(m_window, &scaleX, &scaleY);
-
-                glfwSetWindowMonitor(m_window, nullptr, 0, 0, SETTINGS.WIDTH / scaleX, SETTINGS.HEIGHT / scaleY, GLFW_DONT_CARE);
-                glfwSetWindowAttrib(m_window, GLFW_DECORATED, GLFW_TRUE);
-                glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-
-                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, false);
-                fullscreen = false;
-
+                SETTINGS.FULLSCREEN = false;
+                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, SETTINGS.FULLSCREEN, m_currentDisplayMode, m_scaling);
             }
         }
 
         // QUIT
-        if (m_input->IsPressed(GLFW_KEY_ESCAPE)) break;
+        if (m_input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) break;
 
 
-        m_input->EndProcessInput();
+        m_input->EndFrame();
+
+
 
     }
 
     vkDeviceWaitIdle(m_graphics->m_vulkan->GetDevice());
 
 }
+
+
+

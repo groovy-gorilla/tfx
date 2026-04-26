@@ -6,17 +6,18 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fsanitize=address")
 
 cmake_minimum_required(VERSION 3.30)
-project(vulkan)
+project(TFX)
 
 set(CMAKE_CXX_STANDARD 17)
 
 find_package(Vulkan REQUIRED)
 find_package(PkgConfig REQUIRED)
+find_package(SDL3 REQUIRED)
 
 # GLFW
 pkg_check_modules(GLFW REQUIRED glfw3)
 
-add_executable(vulkan_app main.cpp
+add_executable(TFX main.cpp
         System.h
         System.cpp
         Input.h
@@ -35,27 +36,30 @@ add_executable(vulkan_app main.cpp
         Bitmap.h
         Bitmap.cpp
         BitmapRenderer.h
-        BitmapRenderer.cpp)
+        BitmapRenderer.cpp
+        Renderer.h
+        Renderer.cpp)
 
 
 # include
-target_include_directories(vulkan_app PRIVATE
-        ${GLFW_INCLUDE_DIRS}
+target_include_directories(TFX PRIVATE
+
 )
 
 # link dirs
-target_link_directories(vulkan_app PRIVATE
-        ${GLFW_LIBRARY_DIRS}
+target_link_directories(TFX PRIVATE
+
 )
 
 # link libs
-target_link_libraries(vulkan_app PRIVATE
+target_link_libraries(TFX PRIVATE
         Vulkan::Vulkan
-        ${GLFW_LIBRARIES}
+        SDL3::SDL3
         ktx
+        udev
 )
 
 # compile flags
-target_compile_options(vulkan_app PRIVATE)
+target_compile_options(TFX PRIVATE -g -O0)
 
 

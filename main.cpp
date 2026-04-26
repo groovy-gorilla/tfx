@@ -1,8 +1,7 @@
 #include "ErrorDialog.h"
-#include <memory>
-
 #include "System.h"
 #include "Settings.h"
+#include <memory>
 
 Settings SETTINGS;
 

@@ -1,9 +1,8 @@
 #pragma once
-
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include <GLFW/glfw3.h>
+#include <SDL3/SDL.h>
 #include <fstream>
 
 class Vulkan {
@@ -14,7 +13,7 @@ public:
     Vulkan();
     ~Vulkan();
 
-    void Initialize(GLFWwindow *window);
+    void Initialize(SDL_Window* window);
     void Shutdown();
 
     VkDevice& GetDevice();
@@ -26,15 +25,15 @@ public:
     bool IsPipelineDirty();
     void ClearPipelineDirty();
 
-    VkCommandBuffer BeginScene(GLFWwindow* window);
-    void EndScene(GLFWwindow* window, VkCommandBuffer cmd);
+    VkCommandBuffer BeginScene(SDL_Window* window);
+    void EndScene(SDL_Window* window, VkCommandBuffer cmd);
 
-    void SetResolution(GLFWwindow* window, uint32_t width, uint32_t height);
+    void SetResolution(SDL_Window* window, uint32_t width, uint32_t height, float scale);
     void SetMSAA(VkSampleCountFlagBits msaa);
     void SetFilter(VkFilter filter);
     void SetFramebufferResized(bool value);
-    void SetAspectRatioEnabled(bool value);
-    void SetFullscreenEnabled(GLFWwindow* window, bool value);
+    void SetAspectRatioEnabled(SDL_Window* window,bool value);
+    void SetFullscreenEnabled(SDL_Window* window, bool value, SDL_DisplayMode* mode, float scaling);
     std::vector<Resolution> GetVideoModes();
 
 private:
@@ -114,17 +113,17 @@ private:
     std::vector<const char*> GetRequiredExtensions();
     void SetupDebugMessenger();
     void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-    void CreateSurface(GLFWwindow *window);
+    void CreateSurface(SDL_Window *window);
     void CreateSupportedVideoModes();
     void PickPhysicalDevice();
     bool CheckDeviceExtensionSupport(VkPhysicalDevice physicalDevice);
     void CreateSupportedSampleCounts(VkPhysicalDevice physicalDevice);
     void CreateLogicalDevice();
-    void CreateSwapChain(GLFWwindow* window);
+    void CreateSwapChain(SDL_Window* window);
     SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device);
     VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &availableFormats);
     VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR> &availablePresentModes);
-    VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, GLFWwindow* window);
+    VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities, SDL_Window* window);
     void CreateImageViews();
     void CreateOffscreenResources();
     void CreateOffscreenRenderPass();
@@ -144,7 +143,7 @@ private:
     void CreateCommandBuffers();
     void RecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void CreateSyncObjects();
-    void RecreateSwapChain(GLFWwindow* window);
+    void RecreateSwapChain(SDL_Window* window);
     void RecreatePipeline();
     void RecreateSampler();
     QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device);
