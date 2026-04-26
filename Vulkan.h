@@ -28,11 +28,11 @@ public:
     VkCommandBuffer BeginScene(SDL_Window* window);
     void EndScene(SDL_Window* window, VkCommandBuffer cmd);
 
-    void SetResolution(SDL_Window* window, uint32_t width, uint32_t height, float scale);
+    void SetResolution(SDL_Window* window, uint32_t width, uint32_t height, float scaling);
     void SetMSAA(VkSampleCountFlagBits msaa);
     void SetFilter(VkFilter filter);
     void SetFramebufferResized(bool value);
-    void SetAspectRatioEnabled(SDL_Window* window,bool value);
+    void SetAspectRatioEnabled(bool value);
     void SetFullscreenEnabled(SDL_Window* window, bool value, SDL_DisplayMode* mode, float scaling);
     std::vector<Resolution> GetVideoModes();
 

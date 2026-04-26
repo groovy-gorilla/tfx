@@ -88,17 +88,8 @@ void System::InitializeWindow() {
     m_scaling = static_cast<float>(m_currentDisplayMode->w) / mcurr->w;
     std::cout << "SCALING: " << m_scaling << std::endl;
 
-    // Tworzy zwykłe okno
-    if (SETTINGS.FULLSCREEN) {
-        m_window = SDL_CreateWindow(SETTINGS.TITLE.c_str(), m_currentDisplayMode->w / m_scaling, m_currentDisplayMode->h / m_scaling, SDL_WINDOW_VULKAN | SDL_WINDOW_FULLSCREEN);
-    } else {
-        m_window = SDL_CreateWindow(SETTINGS.TITLE.c_str(), SETTINGS.WIDTH / m_scaling, SETTINGS.HEIGHT / m_scaling, SDL_WINDOW_VULKAN);
-    }
-
-    SDL_SetWindowFullscreenMode(m_window, m_currentDisplayMode);
-
-    //SDL_SetWindowFullscreen(m_window, true);
-    //SDL_RaiseWindow(m_window);
+    // Tworzy zwykłe okno (dopiero później w trakcie działania aplikacji przełącza je na FULLSCREEN jeśli tak ustawiono)
+    m_window = SDL_CreateWindow(SETTINGS.TITLE.c_str(), SETTINGS.WIDTH / m_scaling, SETTINGS.HEIGHT / m_scaling, SDL_WINDOW_VULKAN);
 
 }
 
@@ -119,13 +110,12 @@ void System::Loop() {
 
     bool running = true;
     SDL_Event event;
+    static bool done = false;
 
     while (running) {
 
         // RYSOWANIE
         m_graphics->Draw(m_window);
-
-
 
         // OBSŁUGA KLAWIATURY
         m_input->BeginFrame();
@@ -134,12 +124,16 @@ void System::Loop() {
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:                                   // kliknięcie X w oknie
+                    running = false;
+                    break;
                 case SDL_EVENT_QUIT:                                                     // zakończenie programu
                     running = false;
                     break;
-                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-                case SDL_EVENT_WINDOW_RESIZED:                                          // zmiana rozmiaru okna (resized=okno, pixel_size=framebuffer
-                    // ... recreate swapchain
+                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:                               // zmiana rozmiaru framebuffer
+                    m_graphics->m_vulkan->SetFramebufferResized(true);
+                    break;
+                case SDL_EVENT_WINDOW_RESIZED:                                          // zmiana rozmiaru okna
+                    // ...
                     break;
                 case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:                            // zmiana skali w systemie
                     // ...
@@ -204,35 +198,29 @@ void System::Loop() {
         }
 
         // MSAA
-        static bool msaa = false;
         if (m_input->IsKeyPressed(SDL_SCANCODE_M)) {
-            if (msaa) {
-                m_graphics->m_vulkan->SetMSAA(VK_SAMPLE_COUNT_1_BIT);
-                msaa = false;
-            } else {
+            if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
                 m_graphics->m_vulkan->SetMSAA(VK_SAMPLE_COUNT_16_BIT);
-                msaa = true;
+            } else {
+                m_graphics->m_vulkan->SetMSAA(VK_SAMPLE_COUNT_1_BIT);
             }
         }
 
         // FILTER
-        static bool filter = false;
         if (m_input->IsKeyPressed(SDL_SCANCODE_F)) {
-            if (filter) {
-                m_graphics->m_vulkan->SetFilter(VK_FILTER_NEAREST);
-                filter = false;
-            } else {
+            if (SETTINGS.FILTER == VK_FILTER_NEAREST) {
                 m_graphics->m_vulkan->SetFilter(VK_FILTER_LINEAR);
-                filter = true;
+            } else {
+                m_graphics->m_vulkan->SetFilter(VK_FILTER_NEAREST);
             }
         }
 
         // ASPECT RATIO
         if (m_input->IsKeyPressed(SDL_SCANCODE_A)) {
             if (SETTINGS.KEEP_ASPECT_RATIO) {
-                m_graphics->m_vulkan->SetAspectRatioEnabled(m_window, false);
+                m_graphics->m_vulkan->SetAspectRatioEnabled(false);
             } else {
-                m_graphics->m_vulkan->SetAspectRatioEnabled(m_window, true);
+                m_graphics->m_vulkan->SetAspectRatioEnabled(true);
             }
         }
 
@@ -240,11 +228,9 @@ void System::Loop() {
         if (m_input->IsKeyPressed(SDL_SCANCODE_W)) {
             if (!SETTINGS.FULLSCREEN) {
                 // FULLSCREEN
-                SETTINGS.FULLSCREEN = true;
                 m_graphics->m_vulkan->SetFullscreenEnabled(m_window, SETTINGS.FULLSCREEN, m_currentDisplayMode, m_scaling);
             } else {
                 // WINDOWED
-                SETTINGS.FULLSCREEN = false;
                 m_graphics->m_vulkan->SetFullscreenEnabled(m_window, SETTINGS.FULLSCREEN, m_currentDisplayMode, m_scaling);
             }
         }
@@ -255,7 +241,13 @@ void System::Loop() {
 
         m_input->EndFrame();
 
-
+        if (!done) {
+            SDL_Delay(500);
+            SDL_SetWindowFullscreenMode(m_window, m_currentDisplayMode);
+            SDL_SetWindowFullscreen(m_window, true);
+            m_graphics->m_vulkan->SetFullscreenEnabled(m_window, SETTINGS.FULLSCREEN, m_currentDisplayMode, m_scaling);
+            done = true;
+        }
 
     }
 

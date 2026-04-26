@@ -391,7 +391,7 @@ void Vulkan::EndScene(SDL_Window *window, VkCommandBuffer cmd) {
         nullptr
     );
 
-    if (SETTINGS.KEEP_ASPECT_RATIO) {
+    if (SETTINGS.KEEP_ASPECT_RATIO && SETTINGS.FULLSCREEN) {
 
         float aspectRender = static_cast<float>(SETTINGS.WIDTH) / static_cast<float>(SETTINGS.HEIGHT);
         float aspectScreen = static_cast<float>(m_swapChainExtent.width) / static_cast<float>(m_swapChainExtent.height);
@@ -495,19 +495,15 @@ void Vulkan::EndScene(SDL_Window *window, VkCommandBuffer cmd) {
 
 }
 
-void Vulkan::SetResolution(SDL_Window* window, uint32_t width, uint32_t height, float scale) {
+void Vulkan::SetResolution(SDL_Window* window, uint32_t width, uint32_t height, float scaling) {
 
     SETTINGS.WIDTH = width;
     SETTINGS.HEIGHT = height;
 
     if (!SETTINGS.FULLSCREEN) {
-        SDL_SetWindowSize(window, static_cast<float>(width) / scale, static_cast<float>(height) / scale);
+        SDL_SetWindowSize(window, static_cast<float>(width) / scaling, static_cast<float>(height) / scaling);
         SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED );
-        SDL_SetWindowBordered(window, true);
-        SDL_RaiseWindow(window);
     }
-
-    SDL_PumpEvents();
 
     RecreateSwapChain(window);
     RecreatePipeline();
@@ -549,32 +545,24 @@ void Vulkan::SetFramebufferResized(bool value) {
 
 }
 
-void Vulkan::SetAspectRatioEnabled(SDL_Window* window,bool value) {
+void Vulkan::SetAspectRatioEnabled(bool value) {
 
     SETTINGS.KEEP_ASPECT_RATIO = value;
-
-    RecreateSwapChain(window);
-    RecreatePipeline();
 
 }
 
 void Vulkan::SetFullscreenEnabled(SDL_Window* window, bool value, SDL_DisplayMode* mode, float scaling) {
 
-    SDL_SetWindowFullscreen(window, value);
+    SETTINGS.FULLSCREEN = value;
 
     if (SETTINGS.FULLSCREEN) {
         SDL_SetWindowFullscreenMode(window, mode);
-        SetAspectRatioEnabled(window, SETTINGS.KEEP_ASPECT_RATIO);
     } else {
         SDL_SetWindowSize(window, SETTINGS.WIDTH / scaling, SETTINGS.HEIGHT / scaling);
         SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
-        SDL_SetWindowBordered(window, true);
-        SDL_RaiseWindow(window);
     }
 
-    SDL_PumpEvents();
-
-    RecreateSwapChain(window);
+    SDL_SetWindowFullscreen(window, value);
 
 }
 
