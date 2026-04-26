@@ -187,7 +187,7 @@ void System::Loop() {
             i++;
             if (i > (size-1)) i = (size-1);
             m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h, m_scaling);
-            std::cout << "Resolution set to: : " << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
+            std::cout << "Resolution set to: " << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
         }
 
         if (m_input->IsKeyPressed(SDL_SCANCODE_MINUS)){
@@ -226,12 +226,12 @@ void System::Loop() {
 
         // FULLSCREEN/WINDOWED
         if (m_input->IsKeyPressed(SDL_SCANCODE_W)) {
-            if (!SETTINGS.FULLSCREEN) {
-                // FULLSCREEN
-                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, SETTINGS.FULLSCREEN, m_currentDisplayMode, m_scaling);
-            } else {
+            if (SETTINGS.FULLSCREEN) {
                 // WINDOWED
-                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, SETTINGS.FULLSCREEN, m_currentDisplayMode, m_scaling);
+                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, false, m_currentDisplayMode, m_scaling);
+            } else {
+                // FULLSCREEN
+                m_graphics->m_vulkan->SetFullscreenEnabled(m_window, true, m_currentDisplayMode, m_scaling);
             }
         }
 
