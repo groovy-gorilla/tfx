@@ -1,11 +1,10 @@
-- Renderer
 - Sprawdzenie kodu zgodnie z Vulkan Tutorial
-- Po zmniejszeniu do WINDOWED znika cień okna
 - FontClass
 - TextClass
 - FPSClass wyświetlanie klatek na sekundę
 - vsync prawdziwy
 - InputClass (myszka)
+- Renderer
 
 - okno nie może być w rozdzielczości takiej jak ekran
   > gdy uruchamia się windowed to musi wybrać rozdzielczość o 1 tryb niższą (w ustawieniach przy WINDOWED nie powinna wyświetlać się najwyższa rozdzielczość)
