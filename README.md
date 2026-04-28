@@ -21,13 +21,17 @@ The engine will be used as a foundation for future game projects.
 [IndigoEngine]
  │
  ├── [Engine]
+ │    │
  │    ├── [Input]
+ │    │    │
  │    │    ├── Input
  │    │    ├── KeyCodes
  │    │    └── InputMapping
  │    │ 
  │    └── [Platform]
+ │         │
  │         └── [SDL]
+ │              │
  │              └── SDLInput
  │
  └── [App]
