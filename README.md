@@ -18,23 +18,23 @@ The engine will be used as a foundation for future game projects.
 ## Project Structure (NEW)
 
 ```
-(IndigoEngine)
+IndigoEngine/
  │
- ├── [Engine]
+ ├── Engine/
  │    │
- │    ├── [Input]
+ │    ├── Input/
  │    │    │
  │    │    ├── Input
  │    │    ├── KeyCodes
  │    │    └── InputMapping
  │    │ 
- │    └── [Platform]
+ │    └── Platform/
  │         │
- │         └── [SDL]
+ │         └── SDL/
  │              │
  │              └── SDLInput
  │
- └── [App]
+ └── App/
 ```
 
 ## Build
