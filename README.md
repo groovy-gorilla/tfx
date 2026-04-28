@@ -15,24 +15,22 @@ The engine will be used as a foundation for future game projects.
 - Separation of data and rendering logic
 - Expandable for future features
 
-## Project Structure
+## Project Structure (NEW)
 
 ```
-Main
- ├── System
- │    ├── Graphics
- │    │    ├── Vulkan
- │    │    ├── Texture
- │    │    ├── Bitmap
- │    │    │    └── BitmapRenderer
- │    │    ├── Font
- │    │    │    └── Text
- │    │    │         └── TextRenderer
- │    │    └── Renderer
- │    └── Input
- │
- ├── ErrorDialog
- └── Settings
+IndigoEngine/
+│
+├── Engine/
+│   ├── Input/
+│   │   ├── Input
+│   │   ├── KeyCodes
+│   │   └── InputMapping
+│   │ 
+│   └── Platform/
+│       └── SDL/
+│           └── SDLInput
+│
+└── App/
 ```
 
 ## Build
