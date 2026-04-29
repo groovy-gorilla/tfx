@@ -29,9 +29,9 @@ IndigoEngine/
 │   │   └── Logger 
 │   │   
 │   ├── Input/
-│   │   ├── Input.h.cpp
-│   │   ├── KeyCodes
-│   │   └── InputMapping
+│   │   ├── Input h cpp
+│   │   ├── KeyCodes h
+│   │   └── InputMapping h cpp
 │   │ 
 │   └── Platform/
 │       │
