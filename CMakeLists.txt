@@ -20,8 +20,8 @@ pkg_check_modules(GLFW REQUIRED glfw3)
 add_executable(TFX main.cpp
         System.h
         System.cpp
-        Input.h
-        Input.cpp
+        Engine/Input/Input.h
+        Engine/Input/Input.cpp
         Graphics.h
         Graphics.cpp
         Vulkan.h
@@ -38,7 +38,12 @@ add_executable(TFX main.cpp
         BitmapRenderer.h
         BitmapRenderer.cpp
         Renderer.h
-        Renderer.cpp)
+        Renderer.cpp
+        Platform/SDL/SDLInput.h
+        Platform/SDL/SDLInput.cpp
+        Engine/Input/KeyCodes.h
+        Engine/Input/InputMapping.h
+        Engine/Input/InputMapping.cpp)
 
 
 # include

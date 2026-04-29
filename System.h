@@ -1,7 +1,10 @@
 #pragma once
 #include "Graphics.h"
-#include "Input.h"
+#include "Engine/Input/Input.h"
+#include "Engine/Input/InputMapping.h"
 #include <SDL3/SDL.h>
+
+#include "Platform/SDL/SDLInput.h"
 
 class System {
 
@@ -16,8 +19,7 @@ private:
     SDL_Window *m_window;
     SDL_DisplayID* m_displays;
     SDL_DisplayMode* m_currentDisplayMode;
-    Graphics *m_graphics;
-    Input *m_input;
+    Graphics* m_graphics;
     float m_scaling;
 
     void InitializeWindow();

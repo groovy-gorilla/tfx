@@ -2,13 +2,15 @@
 #include "Settings.h"
 #include <algorithm>
 #include <iostream>
+#include <SDL3/SDL_scancode.h>
+
+#include "Engine/Input/InputMapping.h"
 
 System::System() {
     m_window = nullptr;
     m_displays = nullptr;
     m_currentDisplayMode = nullptr;
     m_graphics = nullptr;
-    m_input = nullptr;
 }
 
 System::~System() = default;
@@ -20,9 +22,6 @@ void System::Initialize() {
     m_graphics = new Graphics();
     m_graphics->Initialize(m_window);
 
-    m_input = new Input();
-    m_input->Initialize();
-
 }
 
 void System::Shutdown() {
@@ -30,9 +29,6 @@ void System::Shutdown() {
     m_graphics->Shutdown();
     delete m_graphics;
     m_graphics = nullptr;
-
-    delete m_input;
-    m_input = nullptr;
 
     ShutdownWindow();
 
@@ -112,13 +108,26 @@ void System::Loop() {
     SDL_Event event;
     static bool done = false;
 
+    Input input;
+    input.Initialize(SDL_SCANCODE_COUNT);
+    SDLInput sdlInput(input);
+
+    InputMapping actions;
+    actions.Bind("Windowed", Key::W);
+    actions.Bind("Aspect", Key::A);
+    actions.Bind("Filter", Key::F);
+    actions.Bind("Antialiasing", Key::M);
+    actions.Bind("ResolutionUp", Key::Equals);
+    actions.Bind("ResolutionDown", Key::Minus);
+    actions.Bind("Quit", Key::Escape);
+
     while (running) {
 
         // RYSOWANIE
         m_graphics->Draw(m_window);
 
         // OBSŁUGA KLAWIATURY
-        m_input->BeginFrame();
+        input.BeginFrame();
 
         // OBSŁUGA ZDARZEŃ OKNA
         while (SDL_PollEvent(&event)) {
@@ -170,6 +179,7 @@ void System::Loop() {
                     // ...
                     break;
             }
+            sdlInput.ProcessEvent(event); // 🔥 KLUCZ
         }
 
         // SCREEN RESOLUTION
@@ -183,14 +193,14 @@ void System::Loop() {
         if (it != m_graphics->m_vulkan->GetVideoModes().end()) {
             i = std::distance(m.begin(), it);
         }
-        if (m_input->IsKeyPressed(SDL_SCANCODE_EQUALS)) {
+        if (actions.IsActionPressed(input, "ResolutionUp")) {
             i++;
             if (i > (size-1)) i = (size-1);
             m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h, m_scaling);
             std::cout << "Resolution set to: " << SETTINGS.WIDTH << "x" << SETTINGS.HEIGHT << std::endl;
         }
 
-        if (m_input->IsKeyPressed(SDL_SCANCODE_MINUS)){
+        if (actions.IsActionPressed(input, "ResolutionDown")) {
             i--;
             if (i < 0) i = 0;
             m_graphics->m_vulkan->SetResolution(m_window, m_graphics->m_vulkan->GetVideoModes().at(i).w, m_graphics->m_vulkan->GetVideoModes().at(i).h, m_scaling);
@@ -198,7 +208,7 @@ void System::Loop() {
         }
 
         // MSAA
-        if (m_input->IsKeyPressed(SDL_SCANCODE_M)) {
+        if (actions.IsActionPressed(input, "Antialiasing")) {
             if (SETTINGS.MSAA_SAMPLES == VK_SAMPLE_COUNT_1_BIT) {
                 m_graphics->m_vulkan->SetMSAA(VK_SAMPLE_COUNT_16_BIT);
             } else {
@@ -207,7 +217,7 @@ void System::Loop() {
         }
 
         // FILTER
-        if (m_input->IsKeyPressed(SDL_SCANCODE_F)) {
+        if (actions.IsActionPressed(input, "Filter")) {
             if (SETTINGS.FILTER == VK_FILTER_NEAREST) {
                 m_graphics->m_vulkan->SetFilter(VK_FILTER_LINEAR);
             } else {
@@ -216,7 +226,7 @@ void System::Loop() {
         }
 
         // ASPECT RATIO
-        if (m_input->IsKeyPressed(SDL_SCANCODE_A)) {
+        if (actions.IsActionPressed(input, "Aspect")) {
             if (SETTINGS.KEEP_ASPECT_RATIO) {
                 m_graphics->m_vulkan->SetAspectRatioEnabled(false);
             } else {
@@ -225,7 +235,7 @@ void System::Loop() {
         }
 
         // FULLSCREEN/WINDOWED
-        if (m_input->IsKeyPressed(SDL_SCANCODE_W)) {
+        if (actions.IsActionPressed(input, "Windowed")) {
             if (SETTINGS.FULLSCREEN) {
                 // WINDOWED
                 m_graphics->m_vulkan->SetFullscreenEnabled(m_window, false, m_currentDisplayMode, m_scaling);
@@ -236,10 +246,7 @@ void System::Loop() {
         }
 
         // QUIT
-        if (m_input->IsKeyPressed(SDL_SCANCODE_ESCAPE)) break;
-
-
-        m_input->EndFrame();
+        if (actions.IsActionPressed(input, "Quit")) break;
 
         if (!done) {
             SDL_Delay(500);
