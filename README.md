@@ -36,7 +36,6 @@ IndigoEngine/
 │   └── Platform/
 │       │
 │       └── SDL/
-│           │
 │           └── SDLInput
 │
 └── App/
