@@ -22,8 +22,13 @@ IndigoEngine/
 │
 ├── Engine/
 │   │
+│   ├── Core/
+│   │   ├── Application (main loop)
+│   │   ├── Window
+│   │   ├── Time
+│   │   └── Logger 
+│   │   
 │   ├── Input/
-│   │   │
 │   │   ├── Input
 │   │   ├── KeyCodes
 │   │   └── InputMapping
