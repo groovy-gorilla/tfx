@@ -29,7 +29,7 @@ IndigoEngine/
 │   │   └── Logger 
 │   │   
 │   ├── Input/
-│   │   ├── Input
+│   │   ├── Input.h.cpp
 │   │   ├── KeyCodes
 │   │   └── InputMapping
 │   │ 
