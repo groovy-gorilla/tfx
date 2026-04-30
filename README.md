@@ -18,7 +18,8 @@ The engine will be used as a foundation for future game projects.
 ## Project Structure (NEW)
 
 ```
-`IndigoEngine/`
+#Markdown
+IndigoEngine/
 │
 ├── Engine/
 │   │
