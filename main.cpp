@@ -1,21 +1,17 @@
-#include "ErrorDialog.h"
-#include "System.h"
-#include "Settings.h"
-#include <memory>
+#include <iostream>
+#include <ostream>
 
-Settings SETTINGS;
+#include "Engine/Core/Application.h"
 
 int main() {
 
-    // Inteligentny wskaźnik
-    auto system = std::make_unique<System>();
-
+    Application app;
 
     try {
-        system->Initialize();
-        system->Run();
+        app.Run();
     } catch (const std::exception &e) {
-        ShowErrorDialog(EscapeMarkup(e.what()));
+        //ShowErrorDialog(EscapeMarkup(e.what()));
+        std::cerr << e.what() << std::endl;
     }
 
     return EXIT_SUCCESS;

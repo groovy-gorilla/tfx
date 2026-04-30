@@ -85,7 +85,7 @@ void System::InitializeWindow() {
     std::cout << "SCALING: " << m_scaling << std::endl;
 
     // Tworzy zwykłe okno (dopiero później w trakcie działania aplikacji przełącza je na FULLSCREEN jeśli tak ustawiono)
-    m_window = SDL_CreateWindow(SETTINGS.TITLE.c_str(), SETTINGS.WIDTH / m_scaling, SETTINGS.HEIGHT / m_scaling, SDL_WINDOW_VULKAN);
+//    m_window = SDL_CreateWindow(SETTINGS.TITLE.c_str(), SETTINGS.WIDTH / m_scaling, SETTINGS.HEIGHT / m_scaling, SDL_WINDOW_VULKAN);
 
 }
 
@@ -110,7 +110,7 @@ void System::Loop() {
 
     Input input;
     input.Initialize(SDL_SCANCODE_COUNT);
-    SDLInput sdlInput(input);
+    //SDLInput sdlInput(input);
 
     InputMapping actions;
     actions.Bind("Windowed", Key::W);
@@ -179,7 +179,7 @@ void System::Loop() {
                     // ...
                     break;
             }
-            sdlInput.ProcessEvent(event); // 🔥 KLUCZ
+            //sdlInput.ProcessEvent(event); // 🔥 KLUCZ
         }
 
         // SCREEN RESOLUTION
@@ -261,6 +261,7 @@ void System::Loop() {
     vkDeviceWaitIdle(m_graphics->m_vulkan->GetDevice());
 
 }
+
 
 
 

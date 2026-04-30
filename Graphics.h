@@ -21,3 +21,4 @@ private:
     BitmapRenderer* m_bitmapRenderer;
 
 };
+

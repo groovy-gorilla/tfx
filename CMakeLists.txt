@@ -6,7 +6,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fno-omit
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fsanitize=address")
 
 cmake_minimum_required(VERSION 3.30)
-project(TFX)
+project(IndigoEngine)
 
 set(CMAKE_CXX_STANDARD 17)
 
@@ -14,50 +14,35 @@ find_package(Vulkan REQUIRED)
 find_package(PkgConfig REQUIRED)
 find_package(SDL3 REQUIRED)
 
-# GLFW
-pkg_check_modules(GLFW REQUIRED glfw3)
-
-add_executable(TFX main.cpp
-        System.h
-        System.cpp
+add_executable(IndigoEngine main.cpp
         Engine/Input/Input.h
         Engine/Input/Input.cpp
-        Graphics.h
-        Graphics.cpp
-        Vulkan.h
-        Vulkan.cpp
-        Settings.h
-        ErrorDialog.h
-        ErrorDialog.cpp
-        Font.h
-        Font.cpp
-        Texture.h
-        Texture.cpp
-        Bitmap.h
-        Bitmap.cpp
-        BitmapRenderer.h
-        BitmapRenderer.cpp
-        Renderer.h
-        Renderer.cpp
-        Platform/SDL/SDLInput.h
-        Platform/SDL/SDLInput.cpp
+        Engine/Platform/SDL/SDLInput.h
+        Engine/Platform/SDL/SDLInput.cpp
         Engine/Input/KeyCodes.h
         Engine/Input/InputMapping.h
-        Engine/Input/InputMapping.cpp)
+        Engine/Input/InputMapping.cpp
+        Engine/Core/Application.h
+        Engine/Core/Application.cpp
+        Engine/Core/Window.h
+        Engine/Core/Window.cpp
+        Engine/Core/Display.h
+        Engine/Core/Display.cpp
+)
 
 
 # include
-target_include_directories(TFX PRIVATE
+target_include_directories(IndigoEngine PRIVATE
 
 )
 
 # link dirs
-target_link_directories(TFX PRIVATE
+target_link_directories(IndigoEngine PRIVATE
 
 )
 
 # link libs
-target_link_libraries(TFX PRIVATE
+target_link_libraries(IndigoEngine PRIVATE
         Vulkan::Vulkan
         SDL3::SDL3
         ktx
@@ -65,6 +50,6 @@ target_link_libraries(TFX PRIVATE
 )
 
 # compile flags
-target_compile_options(TFX PRIVATE -g -O0)
+target_compile_options(IndigoEngine PRIVATE -g -O0)
 
 
