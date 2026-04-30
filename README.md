@@ -25,6 +25,7 @@ IndigoEngine/
 │   ├── Core/
 │   │   ├── Application (main loop)
 │   │   ├── Window
+│   │   ├── Display
 │   │   ├── Time
 │   │   └── Logger 
 │   │   
