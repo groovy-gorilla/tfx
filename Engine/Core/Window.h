@@ -20,6 +20,8 @@ public:
     bool ShouldClose() const;
     void SetShouldClose(bool value);
 
+    void GetFramebufferSize(int& width, int& height) const;
+
     // Vulkan
     SDL_Window* GetHandle() const;
 

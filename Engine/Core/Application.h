@@ -4,7 +4,7 @@
 #include "Window.h"
 #include "../../Engine/Input/Input.h"
 #include "../../Engine/Input/InputMapping.h"
-#include "../../Engine/Platform/SDL/SDLInput.h"
+#include "../../Graphics/Graphics.h"
 
 class Application {
 public:
@@ -13,9 +13,10 @@ public:
 private:
     bool m_running = true;
 
-    Input m_input;
-    InputMapping m_inputMapping;
     Display m_display;
     Window m_window;
+    Input m_input;
+    InputMapping m_inputMapping;
+    Graphics m_graphics;
 
 };

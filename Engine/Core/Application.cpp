@@ -1,7 +1,12 @@
 #include "Application.h"
+
+#include <iostream>
+#include <ostream>
+
 #include "Window.h"
 #include <stdexcept>
 #include <SDL3/SDL.h>
+#include "../../Engine/Platform/SDL/SDLInput.h"
 
 void Application::Run() {
 
@@ -18,8 +23,8 @@ void Application::Run() {
 
     WindowDesc desc;
     desc.title = "Indigo Engine";
-    desc.width = 640;
-    desc.height = 480;
+    desc.width = m_display.GetCurrentMode().width;
+    desc.height = m_display.GetCurrentMode().height;
     desc.scaling = m_display.GetScaling();
 
     m_window.Create(desc);
@@ -27,10 +32,15 @@ void Application::Run() {
     m_input.Initialize(SDL_SCANCODE_COUNT);
     SDLInput sdlInput(m_input);
 
-    InputMapping actions;
-    actions.Bind("Quit", Key::Escape);
+    m_inputMapping.Bind("Quit", Key::Escape);
+
+    // VULKAN
+    m_graphics.Initialize(m_window);
+
 
     while (!m_window.ShouldClose()) {
+
+        m_graphics.DrawFrame(m_window);
 
         m_input.BeginFrame();
 
@@ -44,7 +54,7 @@ void Application::Run() {
                     m_window.SetShouldClose(true);
                     break;
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:                               // zmiana rozmiaru framebuffer
-                    //m_graphics->m_vulkan->SetFramebufferResized(true);
+                    m_graphics.RecreateSwapchain(m_window);
                     break;
                 case SDL_EVENT_WINDOW_RESIZED:                                          // zmiana rozmiaru okna
                     // ...
@@ -88,10 +98,12 @@ void Application::Run() {
         }
 
         // QUIT
-        if (actions.IsActionPressed(m_input, "Quit")) break;
+        if (m_inputMapping.IsActionPressed(m_input, "Quit")) break;
 
     }
 
+
+    m_graphics.Shutdown();
     m_window.Destroy();
     SDL_Quit();
 

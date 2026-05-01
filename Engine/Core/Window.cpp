@@ -1,5 +1,7 @@
 #include "Window.h"
 
+#include <stdexcept>
+
 Window::Window() = default;
 Window::~Window() = default;
 
@@ -11,6 +13,12 @@ void Window::Create(const WindowDesc &desc) {
         desc.height / desc.scaling,
         SDL_WINDOW_VULKAN
     );
+
+    if (!m_window) {
+        throw std::runtime_error(SDL_GetError());
+    }
+
+    SDL_ShowWindow(m_window);
 
 }
 
@@ -26,6 +34,10 @@ bool Window::ShouldClose() const {
 
 void Window::SetShouldClose(bool value) {
     m_shouldClose = value;
+}
+
+void Window::GetFramebufferSize(int& width, int& height) const {
+    SDL_GetWindowSizeInPixels(m_window, &width, &height);
 }
 
 SDL_Window* Window::GetHandle() const {

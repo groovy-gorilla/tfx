@@ -28,6 +28,30 @@ add_executable(IndigoEngine main.cpp
         Engine/Core/Window.cpp
         Engine/Core/Display.h
         Engine/Core/Display.cpp
+        Graphics/Vulkan/VulkanSurface.h
+        Graphics/Vulkan/VulkanSurface.cpp
+        Graphics/Vulkan/VulkanInstance.h
+        Graphics/Vulkan/VulkanInstance.cpp
+        Graphics/Vulkan/VulkanPhysicalDevice.h
+        Graphics/Vulkan/VulkanPhysicalDevice.cpp
+        Graphics/Vulkan/VulkanDevice.h
+        Graphics/Vulkan/VulkanDevice.cpp
+        Graphics/Vulkan/VulkanSwapchain.h
+        Graphics/Vulkan/VulkanSwapchain.cpp
+        Graphics/Vulkan/VulkanImageViews.h
+        Graphics/Vulkan/VulkanImageViews.cpp
+        Graphics/Vulkan/VulkanRenderPass.h
+        Graphics/Vulkan/VulkanRenderPass.cpp
+        Graphics/Vulkan/VulkanFramebuffers.h
+        Graphics/Vulkan/VulkanFramebuffers.cpp
+        Graphics/Vulkan/VulkanRenderer.h
+        Graphics/Vulkan/VulkanRenderer.cpp
+        Graphics/Graphics.h
+        Graphics/Graphics.cpp
+        Graphics/Vulkan/VulkanCommandPool.h
+        Graphics/Vulkan/VulkanCommandPool.cpp
+        Graphics/Vulkan/VulkanCommandBuffers.h
+        Graphics/Vulkan/VulkanCommandBuffers.cpp
 )
 
 
