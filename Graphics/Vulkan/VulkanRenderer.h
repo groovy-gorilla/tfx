@@ -12,6 +12,7 @@
 #include "VulkanCommandPool.h"
 #include "VulkanCommandBuffers.h"
 
+
 class VulkanRenderer {
 public:
     void Initialize(Window& window);
@@ -33,11 +34,15 @@ private:
     VulkanFramebuffers m_framebuffers;
     VulkanCommandPool m_commandPool;
     VulkanCommandBuffers m_commandBuffers;
-    VkQueue m_graphicsQueue;
-    VkQueue m_presentQueue;
-    VkSemaphore m_imageAvailableSemaphore;
-    VkSemaphore m_renderFinishedSemaphore;
-    VkFence m_fence;
+    VkQueue m_graphicsQueue = VK_NULL_HANDLE;
+    VkQueue m_presentQueue = VK_NULL_HANDLE;
+    std::vector<VkSemaphore> m_imageAvailableSemaphores;
+    std::vector<VkSemaphore> m_renderFinishedSemaphores;
+    std::vector<VkFence> m_fences;
+
+    static const int MAX_FRAMES_IN_FLIGHT = 2;
+    size_t m_currentFrame = 0;
+
 
 
 

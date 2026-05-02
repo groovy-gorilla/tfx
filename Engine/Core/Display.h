@@ -3,38 +3,37 @@
 #include <vector>
 #include <SDL3/SDL.h>
 
-struct Mode {
-    int width;
-    int height;
-    float refreshRate;
-};
-
 struct DisplayInfo {
-    Uint32 id;
+    SDL_DisplayID id;
     std::string name;
     int modeCount;
-    std::vector<Mode> displayModes;
+    SDL_DisplayMode** displayModes;
 };
 
 class Display {
 public:
     void Initialize();
 
-    const std::vector<DisplayInfo>& GetDisplays() const;
-    int GetDisplayCount();
-    void SetCurrentDisplay(int index);
-    const DisplayInfo& GetCurrentDisplay() const;
-    const std::vector<Mode>& GetDisplayModes(int displayIndex) const;
-    Mode GetDisplayNativeMode();
-    void SetCurrentMode(int modeIndex);
-    Mode GetCurrentMode();
-    float GetScaling();
+    const std::vector<DisplayInfo>& GetDisplays() const;            // Pobiera listę monitorów
+    int GetDisplayCount();                                          // Pobiera liczbę monitorów
+
+    void SetCurrentDisplay(int index);                              // Ustawia aktualny monitor
+    const DisplayInfo& GetCurrentDisplay() const;                   // Pobiera aktualny monitor
+
+    SDL_DisplayMode** GetDisplayModes(int displayIndex) const;      // Pobiera tryby monitora
+    const SDL_DisplayMode* GetDisplayNativeMode();                  // Pobiera tryb natywny monitora
+
+    void SetCurrentMode(int modeIndex);                             // Ustawia aktualny tryb
+    const SDL_DisplayMode* GetCurrentMode();                        // Pobiera aktualny tryb
+
+    float GetScaling();                                             // Pobiera skalowanie
 
 private:
     std::vector<DisplayInfo> m_displays;
+
     int m_displayCount = 0;
-    float m_displayScaling = 1.0f;
     int m_currentDisplayIndex = 0;
-    int m_currentModeIndex = 0;
+    int m_currentDisplayModeIndex = 0;
+
 
 };

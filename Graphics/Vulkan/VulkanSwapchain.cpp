@@ -55,12 +55,13 @@ void VulkanSwapchain::Create(VkPhysicalDevice physicalDevice, VkDevice device,Vk
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &m_swapchain) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create swapchain");
     }
 
-    // 🔥 images
+    // Images
     uint32_t count;
     vkGetSwapchainImagesKHR(device, m_swapchain, &count, nullptr);
     m_images.resize(count);

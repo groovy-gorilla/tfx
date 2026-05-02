@@ -1,5 +1,5 @@
 #include "ErrorDialog.h"
-#include "Settings.h"
+#include "../../../Settings.h"
 #include <cstring>
 #include <sstream>
 
@@ -18,7 +18,7 @@
 }
 
 void ShowErrorDialog(const std::string& errorMessage) {
-    system(("zenity --error --text=\"\n<b>" + SETTINGS.TITLE + " Error!</b>\n\n" + errorMessage + "\n\" --title='' --icon=dialog-error --ok-label='CLOSE'").c_str());
+    system(("zenity --error --text=\"\n<b>Indigo Engine Error!</b>\n\n" + errorMessage + "\n\" --title='' --icon=dialog-error --ok-label='CLOSE'").c_str());
 }
 
 std::string EscapeMarkup(const std::string& text) {

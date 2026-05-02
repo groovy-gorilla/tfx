@@ -1,5 +1,7 @@
 #include "Display.h"
 
+#include <iostream>
+#include <ostream>
 #include <stdexcept>
 
 void Display::Initialize() {
@@ -19,15 +21,14 @@ void Display::Initialize() {
         DisplayInfo di;
         di.id = displays[i];
         di.name = SDL_GetDisplayName(displays[i]);
-        SDL_DisplayMode** dm = SDL_GetFullscreenDisplayModes(displays[i], &di.modeCount);
-        di.displayModes.resize(di.modeCount);
-        for (int j = 0; j < di.modeCount; j++) {
-            di.displayModes[j].width = dm[j]->w;
-            di.displayModes[j].height = dm[j]->h;
-            di.displayModes[j].refreshRate = dm[j]->refresh_rate;
-        }
+        di.displayModes = SDL_GetFullscreenDisplayModes(displays[i], &di.modeCount);
         m_displays[i] = di;
-        SDL_free(dm);
+
+        std::cout << "[Monitor][" << i << "]: " << m_displays[i].name << std::endl;
+        for (int j = 0; j < di.modeCount; j++) {
+            std::cout << m_displays[i].displayModes[j]->w << "x" << m_displays[i].displayModes[j]->h << std::endl;
+        }
+
     }
 
     SDL_free(displays);
@@ -50,25 +51,26 @@ const DisplayInfo& Display::GetCurrentDisplay() const {
     return m_displays[m_currentDisplayIndex];
 }
 
-const std::vector<Mode>& Display::GetDisplayModes(int displayIndex) const {
+SDL_DisplayMode** Display::GetDisplayModes(int displayIndex) const {
     return m_displays[displayIndex].displayModes;
 }
 
-Mode Display::GetDisplayNativeMode() {
+const SDL_DisplayMode* Display::GetDisplayNativeMode() {
     return m_displays[m_currentDisplayIndex].displayModes[0];
 }
 
 void Display::SetCurrentMode(int modeIndex) {
-    m_currentModeIndex = modeIndex;
+    m_currentDisplayModeIndex = modeIndex;
 }
 
-Mode Display::GetCurrentMode() {
-    return m_displays[m_currentDisplayIndex].displayModes[m_currentModeIndex];
+const SDL_DisplayMode* Display::GetCurrentMode() {
+    return m_displays[m_currentDisplayIndex].displayModes[m_currentDisplayModeIndex];
 }
 
 float Display::GetScaling() {
     const SDL_DisplayMode* mcurr = SDL_GetCurrentDisplayMode(m_displays[m_currentDisplayIndex].id);
     if (!mcurr) { return 1.0f; }
-    return static_cast<float>(m_displays[m_currentDisplayIndex].displayModes[m_currentModeIndex].width) / mcurr->w;
+    std::cout << "Scaling: " << static_cast<float>(m_displays[m_currentDisplayIndex].displayModes[0]->w) / mcurr->w << std::endl;
+    return static_cast<float>(m_displays[m_currentDisplayIndex].displayModes[0]->w) / mcurr->w;
 }
 

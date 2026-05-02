@@ -6,6 +6,8 @@ Key TranslateKey(SDL_Scancode scancode) {
         case SDL_SCANCODE_A: return Key::A;
         case SDL_SCANCODE_F: return Key::F;
         case SDL_SCANCODE_M: return Key::M;
+        case SDL_SCANCODE_1: return Key::Num1;
+        case SDL_SCANCODE_2: return Key::Num2;
 
         case SDL_SCANCODE_EQUALS: return Key::Equals;
         case SDL_SCANCODE_MINUS: return Key::Minus;
@@ -16,17 +18,18 @@ Key TranslateKey(SDL_Scancode scancode) {
     }
 }
 
-SDLInput::SDLInput(Input& input)
-    : m_Input(input) {}
+void SDLInput::Initialize(Input* input) {
+    m_input = input;
+}
 
 void SDLInput::ProcessEvent(const SDL_Event& e) {
     if (e.type == SDL_EVENT_KEY_DOWN) {
         Key key = TranslateKey(e.key.scancode);
-        m_Input.SetKeyState(key, true);
+        m_input->SetKeyState(key, true);
     }
     else if (e.type == SDL_EVENT_KEY_UP) {
         Key key = TranslateKey(e.key.scancode);
-        m_Input.SetKeyState(key, false);
+        m_input->SetKeyState(key, false);
     }
 }
 

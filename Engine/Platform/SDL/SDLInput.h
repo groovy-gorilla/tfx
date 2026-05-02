@@ -5,10 +5,10 @@
 
 class SDLInput {
 public:
-    SDLInput(Input& input);
+    void Initialize(Input* input);
 
     void ProcessEvent(const SDL_Event& e);
 
 private:
-    Input& m_Input;
+    Input* m_input = nullptr;
 };

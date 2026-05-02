@@ -3,10 +3,10 @@
 #include <SDL3/SDL.h>
 
 struct WindowDesc {
-    const char* title = "Indigo Engine";
-    uint32_t width = 640;
-    uint32_t height = 480;
-    float scaling = 1.0f;
+    const char* title;
+    uint32_t width;
+    uint32_t height;
+    float scaling;
 };
 
 class Window {
@@ -22,10 +22,17 @@ public:
 
     void GetFramebufferSize(int& width, int& height) const;
 
+    void SetWindowed(int width, int height, float scaling);
+    void SetFullscreen(int width, int height, Uint32 displayID);
+
+    bool IsFullscreen() const;
+
     // Vulkan
     SDL_Window* GetHandle() const;
 
 private:
     SDL_Window* m_window = nullptr;
     bool m_shouldClose = false;
+    bool m_fullscreen = false;
+
 };

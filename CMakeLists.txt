@@ -22,6 +22,8 @@ add_executable(IndigoEngine main.cpp
         Engine/Input/KeyCodes.h
         Engine/Input/InputMapping.h
         Engine/Input/InputMapping.cpp
+        Engine/Core/Error/ErrorDialog.h
+        Engine/Core/Error/ErrorDialog.cpp
         Engine/Core/Application.h
         Engine/Core/Application.cpp
         Engine/Core/Window.h
@@ -52,6 +54,8 @@ add_executable(IndigoEngine main.cpp
         Graphics/Vulkan/VulkanCommandPool.cpp
         Graphics/Vulkan/VulkanCommandBuffers.h
         Graphics/Vulkan/VulkanCommandBuffers.cpp
+        Graphics/Vulkan/VulkanDebug.h
+        Graphics/Vulkan/VulkanDebug.cpp
 )
 
 

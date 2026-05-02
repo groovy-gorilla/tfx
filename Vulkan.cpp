@@ -1,6 +1,6 @@
 #include "Vulkan.h"
 #include "Settings.h"
-#include "ErrorDialog.h"
+#include "Engine/Core/Error/ErrorDialog.h"
 #include <algorithm>
 #include <array>
 #include <cstring>

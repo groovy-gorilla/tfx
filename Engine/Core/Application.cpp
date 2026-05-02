@@ -19,20 +19,29 @@ void Application::Run() {
 
     m_display.Initialize();
     m_display.SetCurrentDisplay(0);
-    m_display.SetCurrentMode(0);
+    m_display.SetCurrentMode(21); // 21 to 800x600
 
     WindowDesc desc;
     desc.title = "Indigo Engine";
-    desc.width = m_display.GetCurrentMode().width;
-    desc.height = m_display.GetCurrentMode().height;
+    desc.width = m_display.GetCurrentMode()->w;
+    desc.height = m_display.GetCurrentMode()->h;
     desc.scaling = m_display.GetScaling();
 
     m_window.Create(desc);
 
     m_input.Initialize(SDL_SCANCODE_COUNT);
-    SDLInput sdlInput(m_input);
 
-    m_inputMapping.Bind("Quit", Key::Escape);
+    m_sdlInput.Initialize(&m_input);
+
+    actions.Bind("Quit", Key::Escape);
+    actions.Bind("Windowed", Key::W);
+    actions.Bind("Aspect", Key::A);
+    actions.Bind("Filter", Key::F);
+    actions.Bind("MSAA", Key::M);
+    actions.Bind("ResolutionUp", Key::Equals);
+    actions.Bind("ResolutionDown", Key::Minus);
+    actions.Bind("Monitor1", Key::Num1);
+    actions.Bind("Monitor2", Key::Num2);
 
     // VULKAN
     m_graphics.Initialize(m_window);
@@ -94,11 +103,64 @@ void Application::Run() {
                     // ...
                     break;
             }
-            sdlInput.ProcessEvent(event); // 🔥 KLUCZ
+
+            m_sdlInput.ProcessEvent(event); // KLUCZ
+
+        }
+
+        // WINDOWED
+        if (actions.IsActionPressed(m_input, "Windowed")) {
+            if (m_window.IsFullscreen()) {
+                m_window.SetWindowed(desc.width, desc.height, desc.scaling);
+            } else {
+                m_window.SetFullscreen(desc.width, desc.height, m_display.GetCurrentDisplay().id);
+            }
         }
 
         // QUIT
-        if (m_inputMapping.IsActionPressed(m_input, "Quit")) break;
+        if (actions.IsActionPressed(m_input, "Quit")) break;
+
+        // Zmiana położenia okna fullscreen pomiędzy monitorami
+        if (m_window.IsFullscreen()) {
+
+            // MONITOR 1
+            if (actions.IsActionPressed(m_input, "Monitor1")) {
+                m_display.SetCurrentDisplay(0);
+                m_display.SetCurrentMode(21);
+                SDL_SetWindowSize(m_window.GetHandle(), m_display.GetCurrentMode()->w / m_display.GetScaling(), m_display.GetCurrentMode()->h / m_display.GetScaling());
+                SDL_Rect bounds;
+                SDL_GetDisplayBounds(0, &bounds);
+                SDL_SetWindowPosition(m_window.GetHandle(), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+                SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetCurrentMode());
+                std::cout << "MONITOR 0" << std::endl;
+            }
+
+            // MONITOR 2
+            if (actions.IsActionPressed(m_input, "Monitor2")) {
+                m_display.SetCurrentDisplay(1);
+                m_display.SetCurrentMode(14);
+                SDL_SetWindowSize(m_window.GetHandle(), m_display.GetCurrentMode()->w / m_display.GetScaling(), m_display.GetCurrentMode()->h / m_display.GetScaling());
+                SDL_Rect bounds;
+                SDL_GetDisplayBounds(1, &bounds);
+                SDL_SetWindowPosition(m_window.GetHandle(), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
+                SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetCurrentMode());
+                std::cout << "MONITOR 1" << std::endl;
+            }
+
+        }
+
+
+
+
+        static bool done = false;
+        if (!done) {
+            //SDL_Delay(10);
+            SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetCurrentMode());
+            SDL_SetWindowFullscreen(m_window.GetHandle(), true);
+            m_window.SetFullscreen(desc.width, desc.height, m_display.GetCurrentDisplay().id);
+            //m_window.SetWindowed(desc.width, desc.height, desc.scaling);
+            done = true;
+        }
 
     }
 
@@ -108,3 +170,4 @@ void Application::Run() {
     SDL_Quit();
 
 }
+
