@@ -11,17 +11,26 @@
 #include "VulkanFramebuffers.h"
 #include "VulkanCommandPool.h"
 #include "VulkanCommandBuffers.h"
+#include "VulkanPipeline.h"
+
+struct ViewportRect {
+    float x;
+    float y;
+    float width;
+    float height;
+};
 
 
 class VulkanRenderer {
 public:
-    void Initialize(Window& window);
-    void Shutdown();
+    void Initialize(Window& window, ApplicationDesc& desc);
+    void Shutdown(ApplicationDesc& desc);
 
-    void RecreateSwapchain(Window& window);
-    void RecordCommandBuffer(uint32_t imageIndex);
+    void RecreateSwapchain(Window& window, ApplicationDesc& desc);
+    ViewportRect CalculateViewport(int width, int height, const ApplicationDesc& desc);
+    void RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& desc);
 
-    void DrawFrame(Window& window);
+    void DrawFrame(Window& window, ApplicationDesc& desc);
 
 private:
     VulkanInstance m_instance;
@@ -39,11 +48,9 @@ private:
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_fences;
+    VulkanPipeline m_pipeline;
 
-    static const int MAX_FRAMES_IN_FLIGHT = 2;
     size_t m_currentFrame = 0;
-
-
 
 
 };

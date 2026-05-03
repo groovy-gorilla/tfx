@@ -1,4 +1,17 @@
 - Sprawdzenie kodu zgodnie z Vulkan Tutorial
+> stanąłem na VulkanPhysicalDevice i QueueFamilies
+
+
+
+
+
+
+
+
+
+
+
+
 - FontClass
 - TextClass
 - FPSClass wyświetlanie klatek na sekundę

@@ -1,14 +1,18 @@
 #pragma once
 
-#include <string>
+#include <vector>
 #include <vulkan/vulkan.h>
-#include "../../Engine/Core/Error/ErrorDialog.h"
 
 #ifdef NDEBUG
 const bool ENABLE_VALIDATION = false;
 #else
 const bool ENABLE_VALIDATION = true;
 #endif
+
+
+const std::vector<const char*> validationLayers = {
+    "VK_LAYER_KHRONOS_validation"
+};
 
 // Callback
 VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -34,6 +38,7 @@ void DestroyDebugUtilsMessengerEXT(
     const VkAllocationCallbacks* pAllocator
 );
 
+bool checkValidationLayerSupport();
 
 // Helper do wypełnienia create info
 void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);

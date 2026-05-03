@@ -5,6 +5,7 @@
 
 class VulkanInstance {
 public:
+
     void Create();
     void Destroy();
 
@@ -15,6 +16,6 @@ private:
     VkDebugUtilsMessengerEXT m_debugMessenger = VK_NULL_HANDLE;
 
     std::vector<const char*> GetRequiredExtensions();
-    void SetupDebugMessenger(VkInstance instance);
+    void SetupDebugMessenger();
 
 };

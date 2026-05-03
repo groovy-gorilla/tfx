@@ -1,72 +1,40 @@
 #include "VulkanRenderer.h"
+
+#include <iostream>
 #include <stdexcept>
 #include "../../Engine/Core/Window.h"
 
-void VulkanRenderer::Initialize(Window& window) {
+void VulkanRenderer::Initialize(Window& window, ApplicationDesc& desc) {
 
     m_instance.Create();
-
-    m_surface.Create(
-        m_instance.Get(),
-        window.GetHandle()
-    );
-
-    m_physicalDevice.Pick(
-        m_instance.Get(),
-        m_surface.Get()
-    );
-
-    m_device.Create(
-        m_physicalDevice.Get(),
-        m_physicalDevice.GetGraphicsQueueFamily(),
-        m_physicalDevice.GetPresentQueueFamily()
-    );
+    m_surface.Create(m_instance.Get(), window.GetHandle());
+    m_physicalDevice.Pick(m_instance.Get(), m_surface.Get());
+    m_device.Create(m_physicalDevice.Get(), m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
 
     int width, height;
     window.GetFramebufferSize(width, height);
 
-    m_swapchain.Create(
-        m_physicalDevice.Get(),
-        m_device.Get(),
-        m_surface.Get(),
-        width,
-        height,
-        m_physicalDevice.GetGraphicsQueueFamily(),
-        m_physicalDevice.GetPresentQueueFamily()
-    );
+    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), width, height, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
+    m_imageViews.Create(m_device.Get(), m_swapchain.GetImages(), m_swapchain.GetImageFormat());
 
-    m_imageViews.Create(
-        m_device.Get(),
-        m_swapchain.GetImages(),
-        m_swapchain.GetImageFormat()
-    );
+    // Create offscreen resources
+    // create msaa resources
+    // create offscreen render pass
+    // create msaa render pass
 
-    m_renderPass.Create(
-        m_device.Get(),
-        m_swapchain.GetImageFormat()
-    );
 
-    m_framebuffers.Create(
-        m_device.Get(),
-        m_renderPass.Get(),
-        m_imageViews.Get(),
-        m_swapchain.GetExtent()
-    );
+    m_renderPass.Create(m_device.Get(), m_swapchain.GetImageFormat()); // to usunąć
 
-    m_commandPool.Create(
-        m_device.Get(),
-        m_physicalDevice.GetGraphicsQueueFamily()
-    );
+    m_framebuffers.Create(m_device.Get(), m_renderPass.Get(), m_imageViews.Get(), m_swapchain.GetExtent());
 
-    m_commandBuffers.Create(
-        m_device.Get(),
-        m_commandPool.Get(),
-        static_cast<uint32_t>(m_framebuffers.Get().size())
-    );
 
-    m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    m_fences.resize(MAX_FRAMES_IN_FLIGHT);
+
+    m_commandPool.Create(m_device.Get(), m_physicalDevice.GetGraphicsQueueFamily());
+    m_commandBuffers.Create(m_device.Get(), m_commandPool.Get(), static_cast<uint32_t>(m_framebuffers.Get().size()));
+
+    m_imageAvailableSemaphores.resize(desc.maxFramesInFlight);
+    m_renderFinishedSemaphores.resize(desc.maxFramesInFlight);
+    m_fences.resize(desc.maxFramesInFlight);
 
     VkSemaphoreCreateInfo semInfo{};
     semInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -75,7 +43,7 @@ void VulkanRenderer::Initialize(Window& window) {
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (int i = 0; i < desc.maxFramesInFlight; i++) {
         if (vkCreateSemaphore(m_device.Get(), &semInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(m_device.Get(), &semInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(m_device.Get(), &fenceInfo, nullptr, &m_fences[i]) != VK_SUCCESS) {
@@ -86,9 +54,12 @@ void VulkanRenderer::Initialize(Window& window) {
     m_graphicsQueue = m_device.GetGraphicsQueue();
     m_presentQueue  = m_device.GetPresentQueue();
 
+    m_pipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_renderPass.Get()
+    );
+
 }
 
-void VulkanRenderer::RecreateSwapchain(Window& window) {
+void VulkanRenderer::RecreateSwapchain(Window& window, ApplicationDesc& desc) {
 
     int width = 0, height = 0;
 
@@ -104,30 +75,14 @@ void VulkanRenderer::RecreateSwapchain(Window& window) {
     m_framebuffers.Destroy(m_device.Get());
     m_imageViews.Destroy(m_device.Get());
     m_swapchain.Destroy(m_device.Get());
+    m_pipeline.Destroy(m_device.Get());
 
     // Create
-    m_swapchain.Create(
-        m_physicalDevice.Get(),
-        m_device.Get(),
-        m_surface.Get(),
-        width,
-        height,
-        m_physicalDevice.GetGraphicsQueueFamily(),
-        m_physicalDevice.GetPresentQueueFamily()
-    );
-
-    m_imageViews.Create(
-        m_device.Get(),
-        m_swapchain.GetImages(),
-        m_swapchain.GetImageFormat()
-    );
-
-    m_framebuffers.Create(
-        m_device.Get(),
-        m_renderPass.Get(),
-        m_imageViews.Get(),
-        m_swapchain.GetExtent()
-    );
+    m_pipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_renderPass.Get());
+    window.GetFramebufferSize(width, height);
+    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), width, height, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
+    m_imageViews.Create(m_device.Get(), m_swapchain.GetImages(), m_swapchain.GetImageFormat());
+    m_framebuffers.Create(m_device.Get(), m_renderPass.Get(), m_imageViews.Get(), m_swapchain.GetExtent());
 
     uint32_t count = static_cast<uint32_t>(m_framebuffers.Get().size());
 
@@ -135,16 +90,38 @@ void VulkanRenderer::RecreateSwapchain(Window& window) {
         throw std::runtime_error("No framebuffers!");
     }
 
-    m_commandBuffers.Create(
-        m_device.Get(),
-        m_commandPool.Get(),
-        static_cast<uint32_t>(m_framebuffers.Get().size())
-    );
-
+    m_commandBuffers.Create(m_device.Get(), m_commandPool.Get(), static_cast<uint32_t>(m_framebuffers.Get().size()));
 
 }
 
-void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex) {
+ViewportRect VulkanRenderer::CalculateViewport(int width, int height, const ApplicationDesc& desc) {
+
+    if (!desc.aspectRatio) {
+        return {0, 0, static_cast<float>(width), static_cast<float>(height)};
+    }
+
+    float aspectRender = static_cast<float>(desc.width) / static_cast<float>(desc.height);
+    float aspectScreen = static_cast<float>(width) / static_cast<float>(height);
+
+    float w = static_cast<float>(width);
+    float h = static_cast<float>(height);
+
+    if (aspectScreen > aspectRender) {
+        // ekran szerszy
+        w = h * aspectRender;
+    } else {
+        // ekran wyższy
+        h = w / aspectRender;
+    }
+
+    float x = (width  - w) * 0.5f;
+    float y = (height - h) * 0.5f;
+
+    return {x, y, w, h};
+
+}
+
+void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& desc) {
 
     VkCommandBuffer cmd = m_commandBuffers.Get()[imageIndex];
 
@@ -168,7 +145,74 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex) {
 
     vkCmdBeginRenderPass(cmd, &rp, VK_SUBPASS_CONTENTS_INLINE);
 
-    // 🔥 tu później pipeline i draw
+    // Pipeline
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline.Get());
+
+    // Aspect ratio
+    if (desc.aspectRatio && desc.fullscreen) {
+
+        float aspectRender = static_cast<float>(desc.width) / static_cast<float>(desc.height);
+        float aspectScreen = static_cast<float>(m_swapchain.GetExtent().width) / static_cast<float>(m_swapchain.GetExtent().height);
+
+        float width, height;
+
+        if (aspectScreen > aspectRender) {
+            // ekran szerszy → pasy po bokach
+            height = static_cast<float>(m_swapchain.GetExtent().height);
+            width = height * aspectRender;
+        } else {
+            // ekran wyższy → pasy góra/dół
+            width = static_cast<float>(m_swapchain.GetExtent().width);
+            height = width / aspectRender;
+        }
+
+        float x = (static_cast<float>(m_swapchain.GetExtent().width) - width) / 2.0f;
+        float y = (static_cast<float>(m_swapchain.GetExtent().height) - height) / 2.0f;
+
+        VkViewport viewport{};
+        viewport.x = x;
+        viewport.y = y;
+        viewport.width = width;
+        viewport.height = height;
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {static_cast<int>(x), static_cast<int>(y)};
+        scissor.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+        std::cout << "Viewport1: "
+          << viewport.x << " " << viewport.y << " "
+          << viewport.width << " " << viewport.height << std::endl;
+
+    } else {
+
+        VkViewport viewport{};
+        viewport.x = 0;
+        viewport.y = 0;
+        viewport.width = static_cast<float>(m_swapchain.GetExtent().width);
+        viewport.height = static_cast<float>(m_swapchain.GetExtent().height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(cmd, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = {m_swapchain.GetExtent().width, m_swapchain.GetExtent().height};
+        vkCmdSetScissor(cmd, 0, 1, &scissor);
+
+        std::cout << "Viewport2: "
+          << viewport.x << " " << viewport.y << " "
+          << viewport.width << " " << viewport.height << std::endl;
+
+    }
+
+    vkCmdDraw(cmd, 3, 1, 0, 0);
+
+    // Draw
+
 
     vkCmdEndRenderPass(cmd);
 
@@ -176,7 +220,8 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex) {
 
 }
 
-void VulkanRenderer::DrawFrame(Window& window) {
+
+void VulkanRenderer::DrawFrame(Window& window, ApplicationDesc& desc) {
 
     vkWaitForFences(m_device.Get(), 1, &m_fences[m_currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(m_device.Get(), 1, &m_fences[m_currentFrame]);
@@ -193,12 +238,12 @@ void VulkanRenderer::DrawFrame(Window& window) {
     );
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        RecreateSwapchain(window);
+        RecreateSwapchain(window, desc);
         return;
     }
 
     // Nagraj komendy dla tego obrazu
-    RecordCommandBuffer(imageIndex);
+    RecordCommandBuffer(imageIndex, desc);
 
     VkSubmitInfo submit{};
     submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -245,18 +290,19 @@ void VulkanRenderer::DrawFrame(Window& window) {
     }
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        RecreateSwapchain(window);
+        RecreateSwapchain(window, desc);
     }
 
-    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    m_currentFrame = (m_currentFrame + 1) % desc.maxFramesInFlight;
 
 }
 
-void VulkanRenderer::Shutdown() {
+void VulkanRenderer::Shutdown(ApplicationDesc& desc) {
 
     vkDeviceWaitIdle(m_device.Get());
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    m_pipeline.Destroy(m_device.Get());
+    for (int i = 0; i < desc.maxFramesInFlight; i++) {
         vkDestroySemaphore(m_device.Get(), m_imageAvailableSemaphores[i], nullptr);
         vkDestroySemaphore(m_device.Get(), m_renderFinishedSemaphores[i], nullptr);
         vkDestroyFence(m_device.Get(), m_fences[i], nullptr);

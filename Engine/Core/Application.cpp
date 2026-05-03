@@ -1,5 +1,6 @@
 #include "Application.h"
 
+#include <algorithm>
 #include <iostream>
 #include <ostream>
 
@@ -18,16 +19,8 @@ void Application::Run() {
     }
 
     m_display.Initialize();
-    m_display.SetCurrentDisplay(0);
-    m_display.SetCurrentMode(21); // 21 to 800x600
 
-    WindowDesc desc;
-    desc.title = "Indigo Engine";
-    desc.width = m_display.GetCurrentMode()->w;
-    desc.height = m_display.GetCurrentMode()->h;
-    desc.scaling = m_display.GetScaling();
-
-    m_window.Create(desc);
+    m_window.Create(m_desc);
 
     m_input.Initialize(SDL_SCANCODE_COUNT);
 
@@ -44,12 +37,18 @@ void Application::Run() {
     actions.Bind("Monitor2", Key::Num2);
 
     // VULKAN
-    m_graphics.Initialize(m_window);
+    m_graphics.Initialize(m_window, m_desc);
 
 
     while (!m_window.ShouldClose()) {
 
-        m_graphics.DrawFrame(m_window);
+        m_graphics.DrawFrame(m_window, m_desc);
+
+        if (m_pendingFullscreen) {
+            SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetDisplayNativeMode());
+            SDL_SetWindowFullscreen(m_window.GetHandle(), m_desc.fullscreen);
+            m_pendingFullscreen = false;
+        }
 
         m_input.BeginFrame();
 
@@ -63,7 +62,7 @@ void Application::Run() {
                     m_window.SetShouldClose(true);
                     break;
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:                               // zmiana rozmiaru framebuffer
-                    m_graphics.RecreateSwapchain(m_window);
+                    m_graphics.RecreateSwapchain(m_window, m_desc);
                     break;
                 case SDL_EVENT_WINDOW_RESIZED:                                          // zmiana rozmiaru okna
                     // ...
@@ -108,66 +107,82 @@ void Application::Run() {
 
         }
 
+
+        // ASPECT RATIO
+        if (actions.IsActionPressed(m_input, "Aspect")) {
+            m_desc.aspectRatio = !m_desc.aspectRatio;
+        }
+
         // WINDOWED
         if (actions.IsActionPressed(m_input, "Windowed")) {
-            if (m_window.IsFullscreen()) {
-                m_window.SetWindowed(desc.width, desc.height, desc.scaling);
+            if (m_desc.fullscreen) {
+                m_window.SetWindowed(m_desc);
+                m_window.SetSize(m_desc);
             } else {
-                m_window.SetFullscreen(desc.width, desc.height, m_display.GetCurrentDisplay().id);
+                m_window.SetFullscreen(m_desc, m_display.GetPrimaryDisplay().id);
             }
         }
 
         // QUIT
         if (actions.IsActionPressed(m_input, "Quit")) break;
 
-        // Zmiana położenia okna fullscreen pomiędzy monitorami
-        if (m_window.IsFullscreen()) {
+        // SCREEN RESOLUTION
+        int size = m_display.GetDisplayModes().size();
+        std::vector<Mode> m = m_display.GetDisplayModes();
+        auto it = std::find_if(m.begin(), m.end(),
+            [&](const Mode& r) {
+                return r.width == m_desc.width && r.height == m_desc.height;
+            });
 
-            // MONITOR 1
-            if (actions.IsActionPressed(m_input, "Monitor1")) {
-                m_display.SetCurrentDisplay(0);
-                m_display.SetCurrentMode(21);
-                SDL_SetWindowSize(m_window.GetHandle(), m_display.GetCurrentMode()->w / m_display.GetScaling(), m_display.GetCurrentMode()->h / m_display.GetScaling());
-                SDL_Rect bounds;
-                SDL_GetDisplayBounds(0, &bounds);
-                SDL_SetWindowPosition(m_window.GetHandle(), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
-                SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetCurrentMode());
-                std::cout << "MONITOR 0" << std::endl;
-            }
+        static int i = -1;
+        if (it != m_display.GetDisplayModes().end()) {
+            i = std::distance(m.begin(), it);
+        }
 
-            // MONITOR 2
-            if (actions.IsActionPressed(m_input, "Monitor2")) {
-                m_display.SetCurrentDisplay(1);
-                m_display.SetCurrentMode(14);
-                SDL_SetWindowSize(m_window.GetHandle(), m_display.GetCurrentMode()->w / m_display.GetScaling(), m_display.GetCurrentMode()->h / m_display.GetScaling());
-                SDL_Rect bounds;
-                SDL_GetDisplayBounds(1, &bounds);
-                SDL_SetWindowPosition(m_window.GetHandle(), bounds.x + bounds.w / 2, bounds.y + bounds.h / 2);
-                SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetCurrentMode());
-                std::cout << "MONITOR 1" << std::endl;
-            }
+        if (actions.IsActionPressed(m_input, "ResolutionDown")) {
+            i++;
+            if (i > (size-1)) i = (size-1);
+            SetResolution(m[i]);
+            std::cout << "Resolution set to: " << m_desc.width << "x" << m_desc.height << std::endl;
+        }
 
+        if (actions.IsActionPressed(m_input, "ResolutionUp")) {
+            i--;
+            if (i < 0) i = 0;
+            SetResolution(m[i]);
+            std::cout << "Resolution set to: " << m_desc.width << "x" << m_desc.height << std::endl;
         }
 
 
 
 
-        static bool done = false;
-        if (!done) {
-            //SDL_Delay(10);
-            SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetCurrentMode());
-            SDL_SetWindowFullscreen(m_window.GetHandle(), true);
-            m_window.SetFullscreen(desc.width, desc.height, m_display.GetCurrentDisplay().id);
-            //m_window.SetWindowed(desc.width, desc.height, desc.scaling);
-            done = true;
-        }
+
+
+
 
     }
 
 
-    m_graphics.Shutdown();
+    m_graphics.Shutdown(m_desc);
     m_window.Destroy();
     SDL_Quit();
+
+}
+
+void Application::SetResolution(const Mode& res) {
+
+    // 1. Window desc
+    m_desc.width = res.width;
+    m_desc.height = res.height;
+
+    // 2. Zmienia rozmiar okna
+    m_window.SetSize(m_desc);
+
+    // 3. Renderer ogarnia swapchain
+    m_graphics.GetRenderer().RecreateSwapchain(m_window, m_desc);
+
+
+
 
 }
 

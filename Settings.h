@@ -2,7 +2,7 @@
 #include <string>
 
 // Struktura z ustawieniami
-struct Settings {
+struct ApplicationDesc {
     const std::string TITLE = "Indigo Engine";
     uint32_t WIDTH = 800;
     uint32_t HEIGHT = 600;
@@ -12,5 +12,5 @@ struct Settings {
     VkSampleCountFlagBits MSAA_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
     VkFilter FILTER = VK_FILTER_NEAREST;
 };
-extern Settings SETTINGS;
+extern ApplicationDesc SETTINGS;
 

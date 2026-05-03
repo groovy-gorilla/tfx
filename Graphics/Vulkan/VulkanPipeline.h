@@ -1,8 +1,19 @@
-//
-// Created by groovy on 2.05.2026.
-//
+#pragma once
+#include <vulkan/vulkan.h>
+#include <string>
+#include <vector>
 
-#ifndef INDIGOENGINE_VULKANPIPELINE_H
-#define INDIGOENGINE_VULKANPIPELINE_H
+class VulkanPipeline {
+public:
+    void Create(VkDevice device, VkExtent2D extent, VkRenderPass renderPass);
+    void Destroy(VkDevice device);
 
-#endif //INDIGOENGINE_VULKANPIPELINE_H
+    VkPipeline Get() const { return m_pipeline; }
+
+private:
+    VkShaderModule CreateShaderModule(VkDevice device, const std::vector<char>& code);
+    std::vector<char> ReadFile(const std::string& filename);
+
+    VkPipelineLayout m_layout = VK_NULL_HANDLE;
+    VkPipeline m_pipeline = VK_NULL_HANDLE;
+};

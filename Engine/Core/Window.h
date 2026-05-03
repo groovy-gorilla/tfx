@@ -1,20 +1,14 @@
 #pragma once
 
+#include "ApplicationDesc.h"
 #include <SDL3/SDL.h>
-
-struct WindowDesc {
-    const char* title;
-    uint32_t width;
-    uint32_t height;
-    float scaling;
-};
 
 class Window {
 public:
     Window();
     ~Window();
 
-    void Create(const WindowDesc& desc);
+    void Create(const ApplicationDesc& desc);
     void Destroy();
 
     bool ShouldClose() const;
@@ -22,10 +16,10 @@ public:
 
     void GetFramebufferSize(int& width, int& height) const;
 
-    void SetWindowed(int width, int height, float scaling);
-    void SetFullscreen(int width, int height, Uint32 displayID);
+    void SetWindowed(ApplicationDesc& desc);
+    void SetFullscreen(ApplicationDesc& desc, Uint32 displayID);
 
-    bool IsFullscreen() const;
+    void SetSize(ApplicationDesc& desc);
 
     // Vulkan
     SDL_Window* GetHandle() const;
@@ -33,6 +27,5 @@ public:
 private:
     SDL_Window* m_window = nullptr;
     bool m_shouldClose = false;
-    bool m_fullscreen = false;
 
 };

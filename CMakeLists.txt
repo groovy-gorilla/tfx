@@ -56,6 +56,10 @@ add_executable(IndigoEngine main.cpp
         Graphics/Vulkan/VulkanCommandBuffers.cpp
         Graphics/Vulkan/VulkanDebug.h
         Graphics/Vulkan/VulkanDebug.cpp
+        Graphics/Vulkan/VulkanPipeline.h
+        Graphics/Vulkan/VulkanPipeline.cpp
+        Engine/Core/ApplicationDesc.h
+        Graphics/Vulkan/VulkanRenderTarget.h
 )
 
 

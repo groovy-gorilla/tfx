@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <SDL3/SDL_vulkan.h>
 #include "../../Graphics/Vulkan/VulkanDebug.h"
+#include "../../Engine/Core/Error/ErrorDialog.h"
 
 std::vector<const char*> VulkanInstance::GetRequiredExtensions() {
 
@@ -35,35 +36,32 @@ void VulkanInstance::Create() {
     appInfo.engineVersion = VK_MAKE_API_VERSION(0, 1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_3;
 
-    auto extensions = GetRequiredExtensions();
-
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
+
+    auto extensions = GetRequiredExtensions();
+
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
-
-    #ifndef NDEBUG
-    const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
-    createInfo.enabledLayerCount = 1;
-    createInfo.ppEnabledLayerNames = layers;
-    #else
     createInfo.enabledLayerCount = 0;
-    #endif
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-
     if (ENABLE_VALIDATION) {
+        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.ppEnabledLayerNames = validationLayers.data();
+
         PopulateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = &debugCreateInfo;
+        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
+    } else {
+        createInfo.enabledLayerCount = 0;
+
+        createInfo.pNext = nullptr;
     }
 
-    if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS) {
-        throw std::runtime_error(SDL_GetError());
-    }
+    VK_CHECK(vkCreateInstance(&createInfo, nullptr, &m_instance));
 
-
-    SetupDebugMessenger(m_instance);
+    SetupDebugMessenger();
 
     std::cout << "[Vulkan] Instance created" << std::endl;
 
@@ -87,7 +85,7 @@ VkInstance VulkanInstance::Get() const {
     return m_instance;
 }
 
-void VulkanInstance::SetupDebugMessenger(VkInstance instance) {
+void VulkanInstance::SetupDebugMessenger() {
     if (!ENABLE_VALIDATION) return;
 
     VkDebugUtilsMessengerCreateInfoEXT info{};
@@ -100,9 +98,9 @@ void VulkanInstance::SetupDebugMessenger(VkInstance instance) {
     info.pfnUserCallback = DebugCallback;
 
     auto func = (PFN_vkCreateDebugUtilsMessengerEXT)
-        vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+        vkGetInstanceProcAddr(m_instance, "vkCreateDebugUtilsMessengerEXT");
 
     if (func) {
-        func(instance, &info, nullptr, &m_debugMessenger);
+        func(m_instance, &info, nullptr, &m_debugMessenger);
     }
 }

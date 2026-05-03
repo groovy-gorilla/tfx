@@ -1,8 +1,23 @@
-//
-// Created by groovy on 3.05.2026.
-//
+#pragma once
 
-#ifndef INDIGOENGINE_APPLICATIONDESC_H
-#define INDIGOENGINE_APPLICATIONDESC_H
+#include <string>
+#include <vulkan/vulkan.h>
 
-#endif //INDIGOENGINE_APPLICATIONDESC_H
+struct ApplicationDesc {
+
+    const char* title                    = "Indigo Engine";
+
+    uint32_t width                      = 800;
+    uint32_t height                     = 600;
+
+    float scaling                       = 1.0f;
+
+    bool fullscreen                     = true;
+    bool aspectRatio                    = false;
+    bool vsync                          = true;
+
+    const uint32_t maxFramesInFlight    = 2;
+    VkSampleCountFlagBits msaaSamples   = VK_SAMPLE_COUNT_1_BIT;
+    VkFilter filter                     = VK_FILTER_NEAREST;
+
+};

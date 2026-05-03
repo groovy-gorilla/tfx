@@ -6,12 +6,14 @@ class Window;
 
 class Graphics {
 public:
-    void Initialize(Window& window);
-    void Shutdown();
+    void Initialize(Window& window, ApplicationDesc& desc);
+    void Shutdown(ApplicationDesc& desc);
 
-    void DrawFrame(Window& window);
+    void DrawFrame(Window& window, ApplicationDesc& desc);
 
-    void RecreateSwapchain(Window& window);
+    void RecreateSwapchain(Window& window, ApplicationDesc& desc);
+
+    VulkanRenderer& GetRenderer();
 
 private:
     VulkanRenderer m_renderer;

@@ -1,5 +1,5 @@
 #include <iostream>
-#include <ostream>
+#include "Engine/Core/Error/ErrorDialog.h"
 
 #include "Engine/Core/Application.h"
 
@@ -10,8 +10,8 @@ int main() {
     try {
         app.Run();
     } catch (const std::exception &e) {
-        //ShowErrorDialog(EscapeMarkup(e.what()));
-        std::cerr << e.what() << std::endl;
+        ShowErrorDialog(EscapeMarkup(e.what()));
+        //std::cerr << e.what() << std::endl;
     }
 
     return EXIT_SUCCESS;

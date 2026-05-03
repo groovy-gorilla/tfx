@@ -1,8 +1,37 @@
 #include "VulkanDebug.h"
+
+#include <cstring>
 #include <iostream>
 
 // Callback
-VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+VKAPI_ATTR void ShowErrorDialog(const std::string& msg);
+
+bool checkValidationLayerSupport() {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validationLayers) {
+        bool layerFound = false;
+
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+VkBool32 VKAPI_CALL DebugCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT severity,
     VkDebugUtilsMessageTypeFlagsEXT type,
     const VkDebugUtilsMessengerCallbackDataEXT* data,
@@ -35,9 +64,9 @@ VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMes
     auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
     if (func != nullptr) {
         return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-    } else {
-        return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
+
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
 
 }
 
