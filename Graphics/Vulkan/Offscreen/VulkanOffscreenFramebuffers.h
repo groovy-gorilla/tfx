@@ -3,7 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
-class VulkanFramebuffers {
+class VulkanOffscreenFramebuffers {
 public:
     void Create(VkDevice device, VkRenderPass renderPass, const std::vector<VkImageView>& imageViews, VkExtent2D extent);
     void Destroy(VkDevice device);

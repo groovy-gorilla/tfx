@@ -1,12 +1,13 @@
-#include "VulkanRenderPass.h"
+#include "VulkanSwapchainRenderPass.h"
 
+#include <array>
 #include <iostream>
 #include <ostream>
 #include <stdexcept>
 
-void VulkanRenderPass::Create(VkDevice device, VkFormat swapchainFormat) {
+void VulkanSwapchainRenderPass::Create(VkDevice device, VkFormat swapchainFormat) {
 
-    // Attachment (czyli obraz końcowy)
+    // Color attachment
     VkAttachmentDescription colorAttachment{};
     colorAttachment.format = swapchainFormat;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -18,15 +19,15 @@ void VulkanRenderPass::Create(VkDevice device, VkFormat swapchainFormat) {
     colorAttachment.finalLayout   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
     // Referencja do attachmentu
-    VkAttachmentReference colorRef{};
-    colorRef.attachment = 0;
-    colorRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkAttachmentReference colorAttachmentRef{};
+    colorAttachmentRef.attachment = 0;
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     // Subpass (pojedynczy etap renderowania)
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &colorRef;
+    subpass.pColorAttachments = &colorAttachmentRef;
 
     // Dependency (synchronizacja)
     VkSubpassDependency dependency{};
@@ -37,11 +38,15 @@ void VulkanRenderPass::Create(VkDevice device, VkFormat swapchainFormat) {
     dependency.srcAccessMask = 0;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
+    std::array<VkAttachmentDescription, 1> attachments = {
+        colorAttachment
+    };
+
     // Create info
     VkRenderPassCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     createInfo.attachmentCount = 1;
-    createInfo.pAttachments = &colorAttachment;
+    createInfo.pAttachments = attachments.data();
     createInfo.subpassCount = 1;
     createInfo.pSubpasses = &subpass;
     createInfo.dependencyCount = 1;
@@ -55,7 +60,7 @@ void VulkanRenderPass::Create(VkDevice device, VkFormat swapchainFormat) {
 
 }
 
-void VulkanRenderPass::Destroy(VkDevice device) {
+void VulkanSwapchainRenderPass::Destroy(VkDevice device) {
 
     if (m_renderPass != VK_NULL_HANDLE) {
         vkDestroyRenderPass(device, m_renderPass, nullptr);
@@ -65,7 +70,7 @@ void VulkanRenderPass::Destroy(VkDevice device) {
 
 }
 
-VkRenderPass VulkanRenderPass::Get() const {
+VkRenderPass VulkanSwapchainRenderPass::Get() const {
     return m_renderPass;
 }
 

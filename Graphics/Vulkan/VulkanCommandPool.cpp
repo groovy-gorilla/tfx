@@ -8,8 +8,8 @@ void VulkanCommandPool::Create(VkDevice device, uint32_t graphicsQueueFamily) {
 
     VkCommandPoolCreateInfo info{};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    info.queueFamilyIndex = graphicsQueueFamily;
     info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    info.queueFamilyIndex = graphicsQueueFamily;
 
     if (vkCreateCommandPool(device, &info, nullptr, &m_commandPool) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create command pool");

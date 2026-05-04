@@ -42,6 +42,11 @@ void Application::Run() {
 
     while (!m_window.ShouldClose()) {
 
+        if (m_framebufferResized) {
+            m_framebufferResized = false;
+            m_graphics.RecreateSwapchain(m_window);
+        }
+
         m_graphics.DrawFrame(m_window, m_desc);
 
         if (m_pendingFullscreen) {
@@ -62,7 +67,7 @@ void Application::Run() {
                     m_window.SetShouldClose(true);
                     break;
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:                               // zmiana rozmiaru framebuffer
-                    m_graphics.RecreateSwapchain(m_window, m_desc);
+                    m_framebufferResized = true;
                     break;
                 case SDL_EVENT_WINDOW_RESIZED:                                          // zmiana rozmiaru okna
                     // ...
@@ -143,14 +148,14 @@ void Application::Run() {
             i++;
             if (i > (size-1)) i = (size-1);
             SetResolution(m[i]);
-            std::cout << "Resolution set to: " << m_desc.width << "x" << m_desc.height << std::endl;
+            std::cout << "Resolution set to: " << m[i].width << "x" << m[i].height << std::endl;
         }
 
         if (actions.IsActionPressed(m_input, "ResolutionUp")) {
             i--;
             if (i < 0) i = 0;
             SetResolution(m[i]);
-            std::cout << "Resolution set to: " << m_desc.width << "x" << m_desc.height << std::endl;
+            std::cout << "Resolution set to: " << m[i].width << "x" << m[i].height << std::endl;
         }
 
 
@@ -179,10 +184,7 @@ void Application::SetResolution(const Mode& res) {
     m_window.SetSize(m_desc);
 
     // 3. Renderer ogarnia swapchain
-    m_graphics.GetRenderer().RecreateSwapchain(m_window, m_desc);
-
-
-
+    m_graphics.GetRenderer().RecreateSwapchain(m_window);
 
 }
 

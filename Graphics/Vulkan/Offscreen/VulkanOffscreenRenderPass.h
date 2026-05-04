@@ -2,9 +2,9 @@
 
 #include <vulkan/vulkan.h>
 
-class VulkanRenderPass {
+class VulkanOffscreenRenderPass {
 public:
-    void Create(VkDevice device, VkFormat swapchainFormat);
+    void Create(VkDevice device, VkFormat colorFormat, VkFormat depthFormat);
     void Destroy(VkDevice device);
 
     VkRenderPass Get() const;

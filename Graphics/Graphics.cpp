@@ -12,8 +12,8 @@ void Graphics::DrawFrame(Window& window, ApplicationDesc& desc) {
     m_renderer.DrawFrame(window, desc);
 }
 
-void Graphics::RecreateSwapchain(Window& window, ApplicationDesc& desc) {
-    m_renderer.RecreateSwapchain(window, desc);
+void Graphics::RecreateSwapchain(Window& window) {
+    m_renderer.RecreateSwapchain(window);
 }
 
 VulkanRenderer& Graphics::GetRenderer() {

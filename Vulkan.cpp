@@ -78,31 +78,31 @@ Vulkan::~Vulkan() = default;
 
 void Vulkan::Initialize(SDL_Window* window) {
 
-    CreateInstance();
-    SetupDebugMessenger();
-    CreateSurface(window);
-    CreateSupportedVideoModes();
-    PickPhysicalDevice();
+    //CreateInstance();
+    //SetupDebugMessenger();
+    //CreateSurface(window);
+    //CreateSupportedVideoModes();
+    //PickPhysicalDevice();
     CreateSupportedSampleCounts(m_physicalDevice);
-    CreateLogicalDevice();
-    CreateSwapChain(window);
-    CreateImageViews();
-    CreateOffscreenResources();
+    //CreateLogicalDevice();
+    //CreateSwapChain(window);
+    //CreateImageViews();
+    CreateOffscreenResources(); // Mazm 1 RenderPass
     CreateMSAAResources();
     CreateOffscreenRenderPass();
     CreateMSAARenderPass();
-    CreateFramebuffer();
-    CreateRenderPass();
+    //CreateFramebuffer();
+    //CreateRenderPass();
     CreateDescriptorSetLayout();
-    CreateScenePipeline();
+    CreateScenePipeline(); // Mam 1 Pipeline
     CreatePostPipeline();
     CreateSampler();
     CreateDescriptorPool();
     CreateDescriptorSet();
-    CreateFramebuffers();
-    CreateCommandPool();
-    CreateCommandBuffers();
-    CreateSyncObjects();
+    //CreateFramebuffers();
+    //CreateCommandPool();
+    //CreateCommandBuffers();
+    //CreateSyncObjects();
 
 }
 

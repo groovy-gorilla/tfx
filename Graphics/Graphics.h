@@ -11,7 +11,7 @@ public:
 
     void DrawFrame(Window& window, ApplicationDesc& desc);
 
-    void RecreateSwapchain(Window& window, ApplicationDesc& desc);
+    void RecreateSwapchain(Window& window);
 
     VulkanRenderer& GetRenderer();
 

@@ -2,27 +2,96 @@
 
 #include <iostream>
 #include <ostream>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
 void VulkanPhysicalDevice::Pick(VkInstance instance, VkSurfaceKHR surface) {
 
+
+    // Wylicza karty graficzne wspierające Vulkan
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
+
+    // Jeśli nie ma to błąd
     if (deviceCount == 0) {
-        throw std::runtime_error("No Vulkan-compatible GPU found.");
+        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
     }
 
+    // Pobiera listę kart graficznych wspierających Vulkan
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 
-    for (const auto& device : devices) {
-        if (IsDeviceSuitable(device, surface)) {
-            m_physicalDevice = device;
-            break;
-        }
+    // Tworzy drugą listę kart graficznych z flagą używalności
+    struct GPUs {
+        VkPhysicalDevice physicalDevice;
+        bool usable = true;
+    };
+    std::vector<GPUs> GPU_List;
+    GPU_List.resize(deviceCount);
+
+    // Przerzuca główną listę do drugiej
+    for (int i = 0; i < deviceCount; i++) {
+        GPU_List[i].physicalDevice = devices[i];
     }
 
+    // Sprawdza każdą kartę pod względem używalności
+    for (auto& gpu : GPU_List) {
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(gpu.physicalDevice, &deviceProperties);
+
+        // Jeśli to software CPU - odpada
+        if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_CPU) {
+            gpu.usable = false;
+        }
+
+        // Jeśli nie obsługuje kolejek graphicsQueue i presetnQueue - odpada
+        QueueFamilyIndices indices = FindQueueFamilies(gpu.physicalDevice, surface);
+        if (!indices.graphicsFamily.has_value() || !indices.presentFamily.has_value()) {
+            gpu.usable = false;
+        }
+
+        // Jeśli nie obsługuje wymaganych rozszerzeń - odpada
+        if (!CheckDeviceExtensionSupport(gpu.physicalDevice)) {
+            gpu.usable = false;
+        }
+
+        // Jeśli nie obsługuje swapchain - odpada
+        SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(gpu.physicalDevice, surface);
+        if (swapChainSupport.formats.empty() || swapChainSupport.presentModes.empty()) {
+            gpu.usable = false;
+        }
+
+    }
+
+    // Sprawdza właściwości każdego używalnego urządzenia
+    VkPhysicalDevice integrated = VK_NULL_HANDLE;
+    for (auto& gpu : GPU_List) {
+
+        if (gpu.usable) {
+            VkPhysicalDeviceProperties deviceProperties;
+            vkGetPhysicalDeviceProperties(gpu.physicalDevice, &deviceProperties);
+
+            // Jeśli jest dedykowana to wybiera pierwszą z listy
+            if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+                m_physicalDevice = gpu.physicalDevice;
+                break;
+            }
+
+            // lub zintegrowaną jak nie ma discrete gpu
+            if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) {
+                integrated = gpu.physicalDevice;
+            }
+        }
+
+    }
+
+    // Jeśli jest zinegrowana a nie ma dedykowanej to wybiera zintegrowaną
+    if (m_physicalDevice == VK_NULL_HANDLE && integrated != VK_NULL_HANDLE) {
+        m_physicalDevice = integrated;
+    }
+
+    // Jeśli nie ma w ogóle to znaczy, że nie ma GPU spełniającego wymagania
     if (m_physicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("No suitable GPU found.");
     }
@@ -31,44 +100,82 @@ void VulkanPhysicalDevice::Pick(VkInstance instance, VkSurfaceKHR surface) {
 
 }
 
-bool VulkanPhysicalDevice::IsDeviceSuitable(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
-    FindQueueFamilies(device, surface);
+QueueFamilyIndices VulkanPhysicalDevice::FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
 
-    return m_graphicsQueueFamily != UINT32_MAX && m_presentQueueFamily != UINT32_MAX;
+    QueueFamilyIndices indices;
 
-}
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
-void VulkanPhysicalDevice::FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
-    uint32_t queueCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, nullptr);
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
 
-    std::vector<VkQueueFamilyProperties> queues(queueCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, queues.data());
-
-    for (uint32_t i = 0; i < queueCount; i++) {
-
-        // Graphics queue
-        if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        // graphicsQueue
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
             m_graphicsQueueFamily = i;
         }
 
-        // Present queue (czy może wyświetlać na ekran)
+        // presentQueue
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-
         if (presentSupport) {
+            indices.presentFamily = i;
             m_presentQueueFamily = i;
         }
 
-        // Jeśli mamy oba - kończymy
-        if (m_graphicsQueueFamily != UINT32_MAX && m_presentQueueFamily != UINT32_MAX) {
-            break;
-        }
-
+        i++;
     }
 
+    return indices;
+
+}
+
+bool VulkanPhysicalDevice::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+
+    uint32_t extensionCount;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+    std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+    for (const auto& extension : availableExtensions) {
+        requiredExtensions.erase(extension.extensionName);
+    }
+
+    return requiredExtensions.empty();
+
+}
+
+SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface) {
+
+    SwapChainSupportDetails details;
+
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+    if (formatCount != 0) {
+        details.formats.resize(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+    }
+
+    uint32_t presentModeCount;
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+
+    if (presentModeCount != 0) {
+        details.presentModes.resize(presentModeCount);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+    }
+
+    return details;
 }
 
 VkPhysicalDevice VulkanPhysicalDevice::Get() const {

@@ -38,14 +38,14 @@ add_executable(IndigoEngine main.cpp
         Graphics/Vulkan/VulkanPhysicalDevice.cpp
         Graphics/Vulkan/VulkanDevice.h
         Graphics/Vulkan/VulkanDevice.cpp
-        Graphics/Vulkan/VulkanSwapchain.h
-        Graphics/Vulkan/VulkanSwapchain.cpp
+        Graphics/Vulkan/Swapchain/VulkanSwapchain.h
+        Graphics/Vulkan/Swapchain/VulkanSwapchain.cpp
         Graphics/Vulkan/VulkanImageViews.h
         Graphics/Vulkan/VulkanImageViews.cpp
-        Graphics/Vulkan/VulkanRenderPass.h
-        Graphics/Vulkan/VulkanRenderPass.cpp
-        Graphics/Vulkan/VulkanFramebuffers.h
-        Graphics/Vulkan/VulkanFramebuffers.cpp
+        Graphics/Vulkan/Offscreen/VulkanOffscreenRenderPass.h
+        Graphics/Vulkan/Offscreen/VulkanOffscreenRenderPass.cpp
+        Graphics/Vulkan/Offscreen/VulkanOffscreenFramebuffers.h
+        Graphics/Vulkan/Offscreen/VulkanOffscreenFramebuffers.cpp
         Graphics/Vulkan/VulkanRenderer.h
         Graphics/Vulkan/VulkanRenderer.cpp
         Graphics/Graphics.h
@@ -56,10 +56,21 @@ add_executable(IndigoEngine main.cpp
         Graphics/Vulkan/VulkanCommandBuffers.cpp
         Graphics/Vulkan/VulkanDebug.h
         Graphics/Vulkan/VulkanDebug.cpp
-        Graphics/Vulkan/VulkanPipeline.h
-        Graphics/Vulkan/VulkanPipeline.cpp
+        Graphics/Vulkan/Offscreen/VulkanOffscreenPipeline.h
+        Graphics/Vulkan/Offscreen/VulkanOffscreenPipeline.cpp
         Engine/Core/ApplicationDesc.h
-        Graphics/Vulkan/VulkanRenderTarget.h
+        Graphics/Vulkan/Offscreen/VulkanOffscreenResources.h
+        Graphics/Vulkan/Offscreen/VulkanOffscreenResources.cpp
+        Graphics/Vulkan/VulkanUtils.h
+        Graphics/Vulkan/VulkanUtils.cpp
+        Graphics/Vulkan/Swapchain/VulkanPostPipeline.h
+        Graphics/Vulkan/Swapchain/VulkanSwapchainRenderPass.cpp
+        Graphics/Vulkan/Swapchain/VulkanSwapchainRenderPass.h
+        Graphics/Vulkan/VulkanSampler.h
+        Graphics/Vulkan/VulkanSampler.cpp
+        Graphics/Vulkan/Swapchain/VulkanPostPipeline.cpp
+        Graphics/Vulkan/Swapchain/VulkanSwapchainFramebuffers.cpp
+        Graphics/Vulkan/Swapchain/VulkanSwapchainFramebuffers.h
 )
 
 

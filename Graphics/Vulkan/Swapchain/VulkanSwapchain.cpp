@@ -1,34 +1,22 @@
 #include "VulkanSwapchain.h"
 
+#include <algorithm>
 #include <iostream>
 #include <stdexcept>
 #include <SDL3/SDL.h>
+#include "../VulkanPhysicalDevice.h"
 
-void VulkanSwapchain::Create(VkPhysicalDevice physicalDevice, VkDevice device,VkSurfaceKHR surface, uint32_t width, uint32_t height, uint32_t graphicsQueueFamily, uint32_t presentQueueFamily) {
+void VulkanSwapchain::Create(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkExtent2D extent, uint32_t graphicsQueueFamily, uint32_t presentQueueFamily) {
 
-    // Capabilities
-    VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilities);
+    SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physicalDevice, surface);
 
-    // Formats
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-    std::vector<VkSurfaceFormatKHR> formats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, formats.data());
+    VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
+    VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+    VkExtent2D ext = ChooseSwapExtent(swapChainSupport.capabilities, extent.width, extent.height);
 
-    // Present modes
-    uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-    std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, presentModes.data());
-
-    VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(formats);
-    VkPresentModeKHR presentMode = ChoosePresentMode(presentModes);
-    VkExtent2D extent = ChooseExtent(capabilities, width, height);
-
-    uint32_t imageCount = capabilities.minImageCount + 1;
-    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) {
-        imageCount = capabilities.maxImageCount;
+    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+        imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
     VkSwapchainCreateInfoKHR createInfo{};
@@ -37,7 +25,7 @@ void VulkanSwapchain::Create(VkPhysicalDevice physicalDevice, VkDevice device,Vk
     createInfo.minImageCount = imageCount;
     createInfo.imageFormat = surfaceFormat.format;
     createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
+    createInfo.imageExtent = ext;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
@@ -49,9 +37,11 @@ void VulkanSwapchain::Create(VkPhysicalDevice physicalDevice, VkDevice device,Vk
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
     } else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        createInfo.queueFamilyIndexCount = 0;
+        createInfo.pQueueFamilyIndices = nullptr;
     }
 
-    createInfo.preTransform = capabilities.currentTransform;
+    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
@@ -68,13 +58,13 @@ void VulkanSwapchain::Create(VkPhysicalDevice physicalDevice, VkDevice device,Vk
     vkGetSwapchainImagesKHR(device, m_swapchain, &count, m_images.data());
 
     m_imageFormat = surfaceFormat.format;
-    m_extent = extent;
+    m_extent = ext;
 
     std::cout << "[Vulkan] Swapchain created" << std::endl;
 
 }
 
-VkSurfaceFormatKHR VulkanSwapchain::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
+VkSurfaceFormatKHR VulkanSwapchain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
 
     for (const auto& f : formats) {
         if (f.format == VK_FORMAT_B8G8R8A8_SRGB &&
@@ -87,7 +77,7 @@ VkSurfaceFormatKHR VulkanSwapchain::ChooseSurfaceFormat(const std::vector<VkSurf
 
 }
 
-VkPresentModeKHR VulkanSwapchain::ChoosePresentMode(const std::vector<VkPresentModeKHR>& modes) {
+VkPresentModeKHR VulkanSwapchain::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& modes) {
 
     for (const auto& m : modes) {
         if (m == VK_PRESENT_MODE_MAILBOX_KHR)
@@ -98,7 +88,7 @@ VkPresentModeKHR VulkanSwapchain::ChoosePresentMode(const std::vector<VkPresentM
 
 }
 
-VkExtent2D VulkanSwapchain::ChooseExtent(const VkSurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height) {
+VkExtent2D VulkanSwapchain::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, uint32_t width, uint32_t height) {
 
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return capabilities.currentExtent;
@@ -108,11 +98,8 @@ VkExtent2D VulkanSwapchain::ChooseExtent(const VkSurfaceCapabilitiesKHR& capabil
     extent.width = width;
     extent.height = height;
 
-    extent.width = std::max(capabilities.minImageExtent.width,
-                           std::min(capabilities.maxImageExtent.width, extent.width));
-
-    extent.height = std::max(capabilities.minImageExtent.height,
-                            std::min(capabilities.maxImageExtent.height, extent.height));
+    extent.width = std::clamp(extent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+    extent.height = std::clamp(extent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
     return extent;
 

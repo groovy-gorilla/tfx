@@ -1,10 +1,10 @@
-#include "VulkanFramebuffers.h"
+#include "VulkanOffscreenFramebuffers.h"
 
 #include <iostream>
 #include <ostream>
 #include <stdexcept>
 
-void VulkanFramebuffers::Create(VkDevice device, VkRenderPass renderPass, const std::vector<VkImageView>& imageViews, VkExtent2D extent) {
+void VulkanOffscreenFramebuffers::Create(VkDevice device, VkRenderPass renderPass, const std::vector<VkImageView>& imageViews, VkExtent2D extent) {
 
     m_framebuffers.resize(imageViews.size());
 
@@ -17,10 +17,8 @@ void VulkanFramebuffers::Create(VkDevice device, VkRenderPass renderPass, const 
         VkFramebufferCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         createInfo.renderPass = renderPass;
-
         createInfo.attachmentCount = 1;
         createInfo.pAttachments = attachments;
-
         createInfo.width  = extent.width;
         createInfo.height = extent.height;
         createInfo.layers = 1;
@@ -34,7 +32,7 @@ void VulkanFramebuffers::Create(VkDevice device, VkRenderPass renderPass, const 
 
 }
 
-void VulkanFramebuffers::Destroy(VkDevice device) {
+void VulkanOffscreenFramebuffers::Destroy(VkDevice device) {
 
     for (auto fb : m_framebuffers) {
         vkDestroyFramebuffer(device, fb, nullptr);
@@ -46,7 +44,7 @@ void VulkanFramebuffers::Destroy(VkDevice device) {
 
 }
 
-const std::vector<VkFramebuffer>& VulkanFramebuffers::Get() const {
+const std::vector<VkFramebuffer>& VulkanOffscreenFramebuffers::Get() const {
     return m_framebuffers;
 }
 

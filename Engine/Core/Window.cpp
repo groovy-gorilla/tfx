@@ -42,7 +42,8 @@ void Window::SetShouldClose(bool value) {
 }
 
 void Window::GetFramebufferSize(int& width, int& height) const {
-    SDL_GetWindowSizeInPixels(m_window, &width, &height);
+    //SDL_GetWindowSizeInPixels(m_window, &width, &height);    // nie jestem pewien czy to jest dobre
+    SDL_GetWindowSize(m_window, &width, &height);
 }
 
 void Window::SetWindowed(ApplicationDesc& desc) {

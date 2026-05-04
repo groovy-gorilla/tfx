@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <vector>
 
+#include "VulkanDebug.h"
+
 void VulkanDevice::Create(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamily, uint32_t presentQueueFamily) {
 
     std::set<uint32_t> uniqueQueues = {
@@ -24,11 +26,6 @@ void VulkanDevice::Create(VkPhysicalDevice physicalDevice, uint32_t graphicsQueu
         queueInfos.push_back(queueInfo);
     }
 
-    // Wymagane extension do prezentacji obrazu
-    const std::vector<const char*> deviceExtensions = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-
     VkPhysicalDeviceFeatures features{};
 
     VkDeviceCreateInfo createInfo{};
@@ -39,13 +36,13 @@ void VulkanDevice::Create(VkPhysicalDevice physicalDevice, uint32_t graphicsQueu
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
-    #ifdef _DEBUG
     const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
-    createInfo.enabledLayerCount = 1;
-    createInfo.ppEnabledLayerNames = layers;
-    #else
-    createInfo.enabledLayerCount = 0;
-    #endif
+    if (ENABLE_VALIDATION) {
+        createInfo.enabledLayerCount = 1;
+        createInfo.ppEnabledLayerNames = layers;
+    } else {
+        createInfo.enabledLayerCount = 0;
+    }
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create logical device");
@@ -54,7 +51,6 @@ void VulkanDevice::Create(VkPhysicalDevice physicalDevice, uint32_t graphicsQueu
     // Pobranie kolejek
     vkGetDeviceQueue(m_device, graphicsQueueFamily, 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_device, presentQueueFamily, 0, &m_presentQueue);
-
 
 
     std::cout << "[Vulkan] Logical device created" << std::endl;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include "VulkanPhysicalDevice.h"
 
 class VulkanDevice {
 public:
