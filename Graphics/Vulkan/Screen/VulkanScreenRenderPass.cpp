@@ -1,11 +1,11 @@
-#include "VulkanSwapchainRenderPass.h"
+#include "VulkanScreenRenderPass.h"
 
 #include <array>
 #include <iostream>
 #include <ostream>
 #include <stdexcept>
 
-void VulkanSwapchainRenderPass::Create(VkDevice device, VkFormat swapchainFormat) {
+void VulkanScreenRenderPass::Create(VkDevice device, VkFormat swapchainFormat) {
 
     // Color attachment
     VkAttachmentDescription colorAttachment{};
@@ -60,7 +60,7 @@ void VulkanSwapchainRenderPass::Create(VkDevice device, VkFormat swapchainFormat
 
 }
 
-void VulkanSwapchainRenderPass::Destroy(VkDevice device) {
+void VulkanScreenRenderPass::Destroy(VkDevice device) {
 
     if (m_renderPass != VK_NULL_HANDLE) {
         vkDestroyRenderPass(device, m_renderPass, nullptr);
@@ -70,7 +70,7 @@ void VulkanSwapchainRenderPass::Destroy(VkDevice device) {
 
 }
 
-VkRenderPass VulkanSwapchainRenderPass::Get() const {
+VkRenderPass VulkanScreenRenderPass::Get() const {
     return m_renderPass;
 }
 

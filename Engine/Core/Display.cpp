@@ -26,7 +26,6 @@ void Display::Initialize() {
     for (int i = 0; i < m_displayInfo.displayModes.size(); i++) {
         m_displayInfo.displayModes[i].width = modes[i]->w;
         m_displayInfo.displayModes[i].height = modes[i]->h;
-        std::cout << "[Display] " << m_displayInfo.displayModes[i].width << "x" << m_displayInfo.displayModes[i].height << std::endl;
     }
 
     m_nativeMode = modes[0];                                                                                // Ustawia tryb natywny
@@ -148,7 +147,7 @@ void Display::Initialize() {
 
     std::cout << "[Monitor] " << m_displayInfo.name << std::endl;
     for (int i = 0; i < m_displayInfo.displayModes.size(); i++) {
-        std::cout << m_displayInfo.displayModes[i].width << "x" << m_displayInfo.displayModes[i].height << " " << m_displayInfo.displayModes[i].ratio << std::endl;
+        std::cout << "[Display] " << m_displayInfo.displayModes[i].width << "x" << m_displayInfo.displayModes[i].height << " " << m_displayInfo.displayModes[i].ratio << std::endl;
     }
 
 

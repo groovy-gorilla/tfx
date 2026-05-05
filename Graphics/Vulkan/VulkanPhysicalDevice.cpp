@@ -1,5 +1,6 @@
 #include "VulkanPhysicalDevice.h"
 
+#include <algorithm>
 #include <iostream>
 #include <ostream>
 #include <set>
@@ -96,7 +97,9 @@ void VulkanPhysicalDevice::Pick(VkInstance instance, VkSurfaceKHR surface) {
         throw std::runtime_error("No suitable GPU found.");
     }
 
-    std::cout << "[Vulkan] Physical device selected" << std::endl;
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(m_physicalDevice, &physicalDeviceProperties);
+    std::cout << "[Vulkan] Physical device selected: " << physicalDeviceProperties.deviceName << std::endl;
 
 }
 
@@ -189,3 +192,50 @@ uint32_t VulkanPhysicalDevice::GetGraphicsQueueFamily() const {
 uint32_t VulkanPhysicalDevice::GetPresentQueueFamily() const {
     return m_presentQueueFamily;
 }
+
+void VulkanPhysicalDevice::CreateSupportedSampleCounts() {
+
+    m_msaaSamples.clear();
+
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(m_physicalDevice, &properties);
+
+    VkSampleCountFlags counts = properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts;
+
+    if (counts & VK_SAMPLE_COUNT_1_BIT) m_msaaSamples.push_back(VK_SAMPLE_COUNT_1_BIT);
+    if (counts & VK_SAMPLE_COUNT_2_BIT) m_msaaSamples.push_back(VK_SAMPLE_COUNT_2_BIT);
+    if (counts & VK_SAMPLE_COUNT_4_BIT) m_msaaSamples.push_back(VK_SAMPLE_COUNT_4_BIT);
+    if (counts & VK_SAMPLE_COUNT_8_BIT) m_msaaSamples.push_back(VK_SAMPLE_COUNT_8_BIT);
+    if (counts & VK_SAMPLE_COUNT_16_BIT) m_msaaSamples.push_back(VK_SAMPLE_COUNT_16_BIT);
+    if (counts & VK_SAMPLE_COUNT_32_BIT) m_msaaSamples.push_back(VK_SAMPLE_COUNT_32_BIT);
+    if (counts & VK_SAMPLE_COUNT_64_BIT) m_msaaSamples.push_back(VK_SAMPLE_COUNT_64_BIT);
+
+    std::sort(m_msaaSamples.begin(), m_msaaSamples.end());
+
+    auto max = m_msaaSamples.back();
+
+    auto ToSampleCount = [](VkSampleCountFlagBits s) {
+        switch (s) {
+            case VK_SAMPLE_COUNT_1_BIT:  return 1;
+            case VK_SAMPLE_COUNT_2_BIT:  return 2;
+            case VK_SAMPLE_COUNT_4_BIT:  return 4;
+            case VK_SAMPLE_COUNT_8_BIT:  return 8;
+            case VK_SAMPLE_COUNT_16_BIT: return 16;
+            case VK_SAMPLE_COUNT_32_BIT: return 32;
+            case VK_SAMPLE_COUNT_64_BIT: return 64;
+            default: return 1;
+        }
+    };
+
+    if (!m_msaaSamples.empty()) {
+        std::cout << "[MSAA] Max supported: " << ToSampleCount(max) << "x" << std::endl;
+    } else {
+        std::cout << "[MSAA] Multisampling not supported!" << std::endl;
+    }
+
+}
+
+const std::vector<VkSampleCountFlagBits>& VulkanPhysicalDevice::GetSupportedSampleCounts() const {
+    return m_msaaSamples;
+}
+

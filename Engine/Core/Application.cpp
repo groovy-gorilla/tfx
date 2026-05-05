@@ -39,21 +39,20 @@ void Application::Run() {
     // VULKAN
     m_graphics.Initialize(m_window, m_desc);
 
-
     while (!m_window.ShouldClose()) {
 
-        if (m_framebufferResized) {
-            m_framebufferResized = false;
-            m_graphics.RecreateSwapchain(m_window);
-        }
+        //if (m_framebufferResized) {
+        //    m_framebufferResized = false;
+        //    m_graphics.RecreateSwapchain(m_window);
+        //}
 
-        m_graphics.DrawFrame(m_window, m_desc);
+        //m_graphics.DrawFrame(m_window, m_desc);
 
-        if (m_pendingFullscreen) {
-            SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetDisplayNativeMode());
-            SDL_SetWindowFullscreen(m_window.GetHandle(), m_desc.fullscreen);
-            m_pendingFullscreen = false;
-        }
+        //if (m_pendingFullscreen) {
+        //    SDL_SetWindowFullscreenMode(m_window.GetHandle(), m_display.GetDisplayNativeMode());
+        //    SDL_SetWindowFullscreen(m_window.GetHandle(), m_desc.fullscreen);
+        //    m_pendingFullscreen = false;
+        //}
 
         m_input.BeginFrame();
 
@@ -61,13 +60,13 @@ void Application::Run() {
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
                 case SDL_EVENT_WINDOW_CLOSE_REQUESTED:                                   // kliknięcie X w oknie
-                    m_window.SetShouldClose(true);
+                    //m_window.SetShouldClose(true);
                     break;
                 case SDL_EVENT_QUIT:                                                     // zakończenie programu
                     m_window.SetShouldClose(true);
                     break;
                 case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:                               // zmiana rozmiaru framebuffer
-                    m_framebufferResized = true;
+                    //m_framebufferResized = true;
                     break;
                 case SDL_EVENT_WINDOW_RESIZED:                                          // zmiana rozmiaru okna
                     // ...
@@ -108,55 +107,54 @@ void Application::Run() {
                     break;
             }
 
-            m_sdlInput.ProcessEvent(event); // KLUCZ
+            m_sdlInput.ProcessEvent(event);
 
         }
-
 
         // ASPECT RATIO
-        if (actions.IsActionPressed(m_input, "Aspect")) {
-            m_desc.aspectRatio = !m_desc.aspectRatio;
-        }
+        //if (actions.IsActionPressed(m_input, "Aspect")) {
+        //    m_desc.aspectRatio = !m_desc.aspectRatio;
+        //}
 
         // WINDOWED
-        if (actions.IsActionPressed(m_input, "Windowed")) {
-            if (m_desc.fullscreen) {
-                m_window.SetWindowed(m_desc);
-                m_window.SetSize(m_desc);
-            } else {
-                m_window.SetFullscreen(m_desc, m_display.GetPrimaryDisplay().id);
-            }
-        }
+        //if (actions.IsActionPressed(m_input, "Windowed")) {
+        //    if (m_desc.fullscreen) {
+        //        m_window.SetWindowed(m_desc);
+        //        m_window.SetSize(m_desc);
+        //    } else {
+        //        m_window.SetFullscreen(m_desc, m_display.GetPrimaryDisplay().id);
+        //    }
+        //}
 
         // QUIT
         if (actions.IsActionPressed(m_input, "Quit")) break;
 
         // SCREEN RESOLUTION
-        int size = m_display.GetDisplayModes().size();
-        std::vector<Mode> m = m_display.GetDisplayModes();
-        auto it = std::find_if(m.begin(), m.end(),
-            [&](const Mode& r) {
-                return r.width == m_desc.width && r.height == m_desc.height;
-            });
+        //int size = m_display.GetDisplayModes().size();
+        //std::vector<Mode> m = m_display.GetDisplayModes();
+        //auto it = std::find_if(m.begin(), m.end(),
+        //    [&](const Mode& r) {
+        //        return r.width == m_desc.width && r.height == m_desc.height;
+        //    });
 
-        static int i = -1;
-        if (it != m_display.GetDisplayModes().end()) {
-            i = std::distance(m.begin(), it);
-        }
+        //static int i = -1;
+        //if (it != m_display.GetDisplayModes().end()) {
+        //    i = std::distance(m.begin(), it);
+        //}
 
-        if (actions.IsActionPressed(m_input, "ResolutionDown")) {
-            i++;
-            if (i > (size-1)) i = (size-1);
-            SetResolution(m[i]);
-            std::cout << "Resolution set to: " << m[i].width << "x" << m[i].height << std::endl;
-        }
+        //if (actions.IsActionPressed(m_input, "ResolutionDown")) {
+        //    i++;
+        //    if (i > (size-1)) i = (size-1);
+        //    SetResolution(m[i]);
+        //    std::cout << "Resolution set to: " << m[i].width << "x" << m[i].height << std::endl;
+        //}
 
-        if (actions.IsActionPressed(m_input, "ResolutionUp")) {
-            i--;
-            if (i < 0) i = 0;
-            SetResolution(m[i]);
-            std::cout << "Resolution set to: " << m[i].width << "x" << m[i].height << std::endl;
-        }
+        //if (actions.IsActionPressed(m_input, "ResolutionUp")) {
+        //    i--;
+        //    if (i < 0) i = 0;
+        //    SetResolution(m[i]);
+        //    std::cout << "Resolution set to: " << m[i].width << "x" << m[i].height << std::endl;
+        //}
 
 
 
@@ -177,14 +175,14 @@ void Application::Run() {
 void Application::SetResolution(const Mode& res) {
 
     // 1. Window desc
-    m_desc.width = res.width;
-    m_desc.height = res.height;
+    //m_desc.width = res.width;
+    //m_desc.height = res.height;
 
     // 2. Zmienia rozmiar okna
-    m_window.SetSize(m_desc);
+    //m_window.SetSize(m_desc);
 
     // 3. Renderer ogarnia swapchain
-    m_graphics.GetRenderer().RecreateSwapchain(m_window);
+    //m_graphics.GetRenderer().RecreateSwapchain(m_window);
 
 }
 

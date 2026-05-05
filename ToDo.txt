@@ -1,12 +1,4 @@
-- Sprawdzenie kodu zgodnie z Vulkan Tutorial
-> stanąłem na VulkanSwapchain --> Presentation/Swap chain
-
-
-
-
-
-
-
+- muszę to co mam dokładnie porównać z poprzednim projektem
 
 
 

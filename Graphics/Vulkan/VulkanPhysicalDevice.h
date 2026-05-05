@@ -32,10 +32,14 @@ public:
     uint32_t GetGraphicsQueueFamily() const;
     uint32_t GetPresentQueueFamily() const;
 
+    void CreateSupportedSampleCounts();
+    const std::vector<VkSampleCountFlagBits>& GetSupportedSampleCounts() const;
+
 private:
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     uint32_t m_graphicsQueueFamily = UINT32_MAX;
     uint32_t m_presentQueueFamily = UINT32_MAX;
+    std::vector<VkSampleCountFlagBits> m_msaaSamples;
 
     QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface);
     bool CheckDeviceExtensionSupport(VkPhysicalDevice device);

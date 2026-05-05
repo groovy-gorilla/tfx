@@ -183,6 +183,7 @@ void VulkanPostPipeline::Create(VkDevice device, VkExtent2D extent, VkRenderPass
 void VulkanPostPipeline::Destroy(VkDevice device) {
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_layout, nullptr);
+    vkDestroyDescriptorSetLayout(device, m_descriptorSetLayout, nullptr);
 }
 
 

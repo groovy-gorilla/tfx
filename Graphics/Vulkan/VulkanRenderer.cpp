@@ -1,60 +1,107 @@
 #include "VulkanRenderer.h"
 
+#include <algorithm>
 #include <array>
 #include <cassert>
+#include <iostream>
 #include <stdexcept>
+
+#include "VulkanDebug.h"
 #include "../../Engine/Core/Window.h"
 #include "../../Engine/Core/Error/ErrorDialog.h"
 #include "VulkanUtils.h"
 
 void VulkanRenderer::Initialize(Window& window, ApplicationDesc& desc) {
 
-    m_instance.Create();
+    VkExtent2D extent;
+    extent.width = static_cast<uint32_t>(desc.width);
+    extent.height = static_cast<uint32_t>(desc.height);
+
+    m_instance.Create(desc);
+    m_debug.Create(m_instance.Get());
     m_surface.Create(m_instance.Get(), window.GetHandle());
     m_physicalDevice.Pick(m_instance.Get(), m_surface.Get());
+    m_physicalDevice.CreateSupportedSampleCounts();
     m_device.Create(m_physicalDevice.Get(), m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
-
-    int width = 0, height = 0;
-    window.GetFramebufferSize(width, height);
-    VkExtent2D extent;
-    extent.width = static_cast<uint32_t>(width);
-    extent.height = static_cast<uint32_t>(height);
-
     m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), extent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
-    m_imageViews.Create(m_device.Get(), m_swapchain.GetImages(), m_swapchain.GetImageFormat());
+
+    // SCENE
+    m_sceneRenderPass.Create(m_device.Get(), m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc.msaaSamples);
+    m_sceneResources.Create(m_physicalDevice.Get(), m_device.Get(), extent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc.msaaSamples, m_sceneRenderPass.Get());
+    m_scenePipeline.Create(m_device.Get(), extent, m_sceneRenderPass.Get(), desc.msaaSamples);
+
+
+
+
 
     // RENDER PASS
-    m_offscreenRenderPass.Create(m_device.Get(), m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()));
-    m_swapchainRenderPass.Create(m_device.Get(), m_swapchain.GetImageFormat());
+    //m_offscreenRenderPass.Create(m_device.Get(), m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()));
+    //m_swapchainRenderPass.Create(m_device.Get(), m_swapchain.GetImageFormat());
 
     // RESOURCES
-    m_offscreenResources.Create(m_device.Get(), m_physicalDevice.Get(), extent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), m_offscreenRenderPass.Get());
+    //m_offscreenResources.Create(m_device.Get(), m_physicalDevice.Get(), extent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), m_offscreenRenderPass.Get());
 
     // SAMPLER
-    m_sampler.Create(m_device.Get());
+    //m_sampler.Create(m_device.Get());
 
     // PIPELINES
-    m_offscreenPipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_offscreenRenderPass.Get());
-    m_postPipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_swapchainRenderPass.Get());
+    //m_offscreenPipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_offscreenRenderPass.Get());
+    //m_postPipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_swapchainRenderPass.Get());
 
     // DESCRIPTORY
-    CreateDescriptorPool();
-    CreateDescriptorSet();
-    UpdateDescriptorSet();
+    //CreateDescriptorPool();
+    //CreateDescriptorSet();
+    //UpdateDescriptorSet();
 
     // FRAMEBUFFERS
-    m_framebuffers.Create(m_device.Get(), m_swapchainRenderPass.Get(), m_imageViews.Get(), m_swapchain.GetExtent());
+    //m_framebuffers.Create(m_device.Get(), m_swapchainRenderPass.Get(), m_imageViews.Get(), m_swapchain.GetExtent());
 
 
-    m_commandPool.Create(m_device.Get(), m_physicalDevice.GetGraphicsQueueFamily());
-    m_commandBuffers.Create(m_device.Get(), m_commandPool.Get(), static_cast<uint32_t>(m_framebuffers.Get().size()));
+    //m_commandPool.Create(m_device.Get(), m_physicalDevice.GetGraphicsQueueFamily());
+    //m_commandBuffers.Create(m_device.Get(), m_commandPool.Get(), static_cast<uint32_t>(m_framebuffers.Get().size()));
 
-    CreateSyncObjects(desc);
+    //CreateSyncObjects(desc);
 
-    m_graphicsQueue = m_device.GetGraphicsQueue();
-    m_presentQueue  = m_device.GetPresentQueue();
+    //m_graphicsQueue = m_device.GetGraphicsQueue();
+    //m_presentQueue  = m_device.GetPresentQueue();
 
 }
+
+void VulkanRenderer::Shutdown() {
+
+    vkDeviceWaitIdle(m_device.Get());
+
+
+    //for (int i = 0; i < desc.maxFramesInFlight; i++) {
+    //    vkDestroySemaphore(m_device.Get(), m_imageAvailableSemaphores[i], nullptr);
+    //    vkDestroySemaphore(m_device.Get(), m_renderFinishedSemaphores[i], nullptr);
+    //    vkDestroyFence(m_device.Get(), m_fences[i], nullptr);
+    //}
+    //m_commandBuffers.Destroy(m_device.Get(), m_commandPool.Get());
+    //m_commandPool.Destroy(m_device.Get());
+
+
+
+    m_scenePipeline.Destroy(m_device.Get());
+    m_sceneResources.Destroy(m_device.Get());
+    m_sceneRenderPass.Destroy(m_device.Get());
+    m_swapchain.Destroy(m_device.Get());
+    m_device.Destroy();
+    m_surface.Destroy(m_instance.Get());
+    m_debug.Destroy(m_instance.Get());
+    m_instance.Destroy();
+
+}
+
+
+
+
+
+
+
+
+
+
 
 void VulkanRenderer::RecreateSwapchain(Window& window) {
 
@@ -73,34 +120,27 @@ void VulkanRenderer::RecreateSwapchain(Window& window) {
 
     // Destroy
     m_commandBuffers.Destroy(m_device.Get(), m_commandPool.Get());
-    m_framebuffers.Destroy(m_device.Get());
-    m_postPipeline.Destroy(m_device.Get());
-    m_imageViews.Destroy(m_device.Get());
+    //m_framebuffers.Destroy(m_device.Get());
+    //m_postPipeline.Destroy(m_device.Get());
     m_swapchain.Destroy(m_device.Get());
-    vkFreeDescriptorSets(m_device.Get(), m_descriptorPool, 1, &m_descriptorSet);
-
-    VkDescriptorSetLayout layout = m_postPipeline.GetDescriptorSetLayout();
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = m_descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &layout;
-    vkAllocateDescriptorSets(m_device.Get(), &allocInfo, &m_descriptorSet);
-    UpdateDescriptorSet();
 
     // Create
-    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), extent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
-    m_imageViews.Create(m_device.Get(), m_swapchain.GetImages(), m_swapchain.GetImageFormat());
-    m_postPipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_swapchainRenderPass.Get());
-    m_framebuffers.Create(m_device.Get(), m_swapchainRenderPass.Get(), m_imageViews.Get(), m_swapchain.GetExtent());
+    //m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), window, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
+    //m_postPipeline.Create(m_device.Get(), m_swapchain.GetExtent(), m_swapchainRenderPass.Get());
+    //m_framebuffers.Create(m_device.Get(), m_swapchainRenderPass.Get(), m_imageViews.Get(), m_swapchain.GetExtent());
 
-    uint32_t count = static_cast<uint32_t>(m_framebuffers.Get().size());
+    vkDestroyDescriptorPool(m_device.Get(), m_descriptorPool, nullptr);
+    CreateDescriptorPool();
+    CreateDescriptorSet();
+    UpdateDescriptorSet();
 
-    if (count == 0) {
-        throw std::runtime_error("No framebuffers!");
-    }
+//    uint32_t count = static_cast<uint32_t>(m_framebuffers.Get().size());
 
-    m_commandBuffers.Create(m_device.Get(), m_commandPool.Get(), static_cast<uint32_t>(m_framebuffers.Get().size()));
+    //if (count == 0) {
+    //    throw std::runtime_error("No framebuffers!");
+    //}
+
+    //m_commandBuffers.Create(m_device.Get(), m_commandPool.Get(), static_cast<uint32_t>(m_framebuffers.Get().size()));
 
 }
 
@@ -149,7 +189,7 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& d
     // PASS 1 — OFFSCREEN (SCENA)
     // =========================================================
 
-    VkExtent2D extent = m_offscreenResources.GetExtent();
+    //VkExtent2D extent = m_offscreenResources.GetExtent();
 
     std::array<VkClearValue, 2> clearValues{};
 
@@ -161,49 +201,49 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& d
 
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = m_offscreenRenderPass.Get();
-    renderPassInfo.framebuffer = m_offscreenResources.GetFramebuffer();
+    //renderPassInfo.renderPass = m_offscreenRenderPass.Get();
+    //renderPassInfo.framebuffer = m_offscreenResources.GetFramebuffer();
     renderPassInfo.renderArea.offset = {0, 0};
-    renderPassInfo.renderArea.extent = extent;
+    //renderPassInfo.renderArea.extent = extent;
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());;
     renderPassInfo.pClearValues = clearValues.data();
 
     vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);                                   // BEGIN OFFSCREEN RENDER PASS
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_offscreenPipeline.Get());
+    //vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_offscreenPipeline.Get());
 
     // Aspect ratio
     if (desc.aspectRatio && desc.fullscreen) {
 
         float aspectRender = static_cast<float>(desc.width) / static_cast<float>(desc.height);
-        float aspectScreen = static_cast<float>(extent.width) / static_cast<float>(extent.height);
+        //float aspectScreen = static_cast<float>(extent.width) / static_cast<float>(extent.height);
 
         float width, height;
 
-        if (aspectScreen > aspectRender) {
+        //if (aspectScreen > aspectRender) {
             // ekran szerszy → pasy po bokach
-            height = static_cast<float>(extent.height);
+            //height = static_cast<float>(extent.height);
             width = height * aspectRender;
-        } else {
+        //} else {
             // ekran wyższy → pasy góra/dół
-            width = static_cast<float>(extent.width);
-            height = width / aspectRender;
-        }
+           // width = static_cast<float>(extent.width);
+            //height = width / aspectRender;
+        //}
 
-        float x = (static_cast<float>(extent.width) - width) / 2.0f;
-        float y = (static_cast<float>(extent.height) - height) / 2.0f;
+        //float x = (static_cast<float>(extent.width) - width) / 2.0f;
+        //float y = (static_cast<float>(extent.height) - height) / 2.0f;
 
         VkViewport viewport{};
-        viewport.x = x;
-        viewport.y = y;
-        viewport.width = width;
-        viewport.height = height;
+        //viewport.x = x;
+        //viewport.y = y;
+        //viewport.width = width;
+        //viewport.height = height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
-        scissor.offset = {static_cast<int>(x), static_cast<int>(y)};
-        scissor.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+        //scissor.offset = {static_cast<int>(x), static_cast<int>(y)};
+        //scissor.extent = {static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     } else {
@@ -211,15 +251,15 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& d
         VkViewport viewport{};
         viewport.x = 0;
         viewport.y = 0;
-        viewport.width = static_cast<float>(extent.width);
-        viewport.height = static_cast<float>(extent.height);
+        //viewport.width = static_cast<float>(extent.width);
+        //viewport.height = static_cast<float>(extent.height);
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
         scissor.offset = {0, 0};
-        scissor.extent = extent;
+        //scissor.extent = extent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     }
@@ -228,39 +268,16 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& d
 
     vkCmdEndRenderPass(commandBuffer);                                                                                     // END OFFSCREEN RENDER PASS
 
-
-    // TUTAJ BARRIER                                                                                                       // BARRIER !!!
     VkImageMemoryBarrier barrier{};
     barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 
     barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-
-    barrier.image = m_offscreenResources.GetColorImage();
-
-    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    barrier.subresourceRange.baseMipLevel = 0;
-    barrier.subresourceRange.levelCount = 1;
-    barrier.subresourceRange.baseArrayLayer = 0;
-    barrier.subresourceRange.layerCount = 1;
-
-    // 👇 KLUCZOWE
     barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-    vkCmdPipelineBarrier(
-        commandBuffer,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // src
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,         // dst
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &barrier
-    );
-
+    //barrier.image = m_offscreenResources.GetColorImage();
 
     // =========================================================
     // PASS 2 — SWAPCHAIN (ekran)
@@ -271,8 +288,8 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& d
 
     VkRenderPassBeginInfo postPass{};
     postPass.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    postPass.renderPass = m_swapchainRenderPass.Get();
-    postPass.framebuffer =  m_framebuffers.Get()[imageIndex];
+    //postPass.renderPass = m_swapchainRenderPass.Get();
+    //postPass.framebuffer =  m_framebuffers.Get()[imageIndex];
     postPass.renderArea.offset = {0, 0};
     postPass.renderArea.extent = m_swapchain.GetExtent();
     postPass.clearValueCount = 1;
@@ -280,14 +297,33 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& d
 
     vkCmdBeginRenderPass(commandBuffer, &postPass, VK_SUBPASS_CONTENTS_INLINE);                                             // BEGIN SWAPCHAIN RENDER PASS
 
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_postPipeline.Get());                      // BIND POST PIPELINE
+    //vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_postPipeline.Get());                      // BIND POST PIPELINE
 
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,m_postPipeline.GetLayout(), 0,1, &m_descriptorSet, 0, nullptr);      // BIND DESCRIPTOR
+    VkViewport viewport{};
+    viewport.x = 0;
+    viewport.y = 0;
+    viewport.width  = static_cast<float>(m_swapchain.GetExtent().width);
+    viewport.height = static_cast<float>(m_swapchain.GetExtent().height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = m_swapchain.GetExtent();
+
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+
+    //vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_postPipeline.GetLayout(), 0,1, &m_descriptorSet, 0, nullptr);      // BIND DESCRIPTOR
     assert(m_descriptorSet != VK_NULL_HANDLE);
 
     vkCmdDraw(commandBuffer, 3, 1, 0, 0);                           // DRAW FULLSCREEN TRIANGLE
 
     vkCmdEndRenderPass(commandBuffer);                                                                                     // END RENDER PASS
+
+    vkEndCommandBuffer(commandBuffer);
 
 }
 
@@ -393,30 +429,6 @@ void VulkanRenderer::CreateSyncObjects(ApplicationDesc& desc) {
 
 }
 
-void VulkanRenderer::Shutdown(ApplicationDesc& desc) {
-
-    vkDeviceWaitIdle(m_device.Get());
-
-    m_offscreenPipeline.Destroy(m_device.Get());
-    m_postPipeline.Destroy(m_device.Get());
-    for (int i = 0; i < desc.maxFramesInFlight; i++) {
-        vkDestroySemaphore(m_device.Get(), m_imageAvailableSemaphores[i], nullptr);
-        vkDestroySemaphore(m_device.Get(), m_renderFinishedSemaphores[i], nullptr);
-        vkDestroyFence(m_device.Get(), m_fences[i], nullptr);
-    }
-    m_commandBuffers.Destroy(m_device.Get(), m_commandPool.Get());
-    m_commandPool.Destroy(m_device.Get());
-    m_framebuffers.Destroy(m_device.Get());
-    m_offscreenResources.Destroy(m_device.Get());
-    m_offscreenRenderPass.Destroy(m_device.Get());
-    m_imageViews.Destroy(m_device.Get());
-    m_swapchain.Destroy(m_device.Get());
-    m_device.Destroy();
-    m_surface.Destroy(m_instance.Get());
-    m_instance.Destroy();
-
-}
-
 void VulkanRenderer::CreateDescriptorPool() {
 
     VkDescriptorPoolSize poolSize{};
@@ -434,13 +446,14 @@ void VulkanRenderer::CreateDescriptorPool() {
 
 void VulkanRenderer::CreateDescriptorSet() {
 
-    VkDescriptorSetLayout layout = m_postPipeline.GetDescriptorSetLayout();
+    //VkDescriptorSetLayout layout = m_postPipeline.GetDescriptorSetLayout();
+    assert(layout != VK_NULL_HANDLE);
 
     VkDescriptorSetAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.descriptorPool = m_descriptorPool;
     allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &layout;
+    //allocInfo.pSetLayouts = &layout;
 
     VK_CHECK(vkAllocateDescriptorSets(m_device.Get(), &allocInfo, &m_descriptorSet));
 }
@@ -449,8 +462,10 @@ void VulkanRenderer::UpdateDescriptorSet() {
 
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = m_offscreenResources.GetColorImageView();
+    //imageInfo.imageView = m_offscreenResources.GetColorImageView();
     imageInfo.sampler = m_sampler.Get();
+    assert(imageInfo.imageView != VK_NULL_HANDLE);
+    assert(imageInfo.sampler != VK_NULL_HANDLE);
 
     VkWriteDescriptorSet write{};
     write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -461,6 +476,38 @@ void VulkanRenderer::UpdateDescriptorSet() {
     write.pImageInfo = &imageInfo;
 
     vkUpdateDescriptorSets(m_device.Get(), 1, &write, 0, nullptr);
+    assert(m_descriptorSet != VK_NULL_HANDLE);
 }
 
+void VulkanRenderer::SetMSAA(VkSampleCountFlagBits msaa) {
+
+    const auto& supported = m_physicalDevice.GetSupportedSampleCounts();
+
+    if (std::find(supported.begin(), supported.end(), msaa) == supported.end()) {
+        throw std::runtime_error("MSAA " + std::to_string(msaa) + "x does not supported!");
+    }
+
+    if (m_currentMsaa == msaa) return;
+
+    m_currentMsaa = msaa;
+
+    //RecreatePipeline();
+    //RecreateOffscreenResources();
+
+    auto ToSampleCount = [](VkSampleCountFlagBits s) {
+        switch (s) {
+            case VK_SAMPLE_COUNT_1_BIT:  return 1;
+            case VK_SAMPLE_COUNT_2_BIT:  return 2;
+            case VK_SAMPLE_COUNT_4_BIT:  return 4;
+            case VK_SAMPLE_COUNT_8_BIT:  return 8;
+            case VK_SAMPLE_COUNT_16_BIT: return 16;
+            case VK_SAMPLE_COUNT_32_BIT: return 32;
+            case VK_SAMPLE_COUNT_64_BIT: return 64;
+            default: return 1;
+        }
+    };
+
+    std::cout << "[MSAA] Sample count set to " << ToSampleCount(m_currentMsaa) << "x" << std::endl;
+
+}
 

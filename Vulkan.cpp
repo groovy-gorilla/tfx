@@ -22,15 +22,15 @@ static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugU
 
 }
 
-static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
-
-    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-    if (func != nullptr) {
-        func(instance, debugMessenger, pAllocator);
-    }
-
-}
+//static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator) {
+//
+//    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+//        vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+//    if (func != nullptr) {
+//        func(instance, debugMessenger, pAllocator);
+//    }
+//
+//}
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {

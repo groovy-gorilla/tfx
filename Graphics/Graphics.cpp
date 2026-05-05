@@ -5,15 +5,15 @@ void Graphics::Initialize(Window& window, ApplicationDesc& desc) {
 }
 
 void Graphics::Shutdown(ApplicationDesc& desc) {
-    m_renderer.Shutdown(desc);
+    m_renderer.Shutdown();
 }
 
 void Graphics::DrawFrame(Window& window, ApplicationDesc& desc) {
-    m_renderer.DrawFrame(window, desc);
+    //m_renderer.DrawFrame(window, desc);
 }
 
 void Graphics::RecreateSwapchain(Window& window) {
-    m_renderer.RecreateSwapchain(window);
+    //m_renderer.RecreateSwapchain(window);
 }
 
 VulkanRenderer& Graphics::GetRenderer() {
