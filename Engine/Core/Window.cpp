@@ -5,17 +5,27 @@
 
 #include "Display.h"
 
+
+
+// Okno powinno mieć możliwość UpdateScaling w przypadku, gdyby w trakcie działania aplikacji
+// użytkownik zmienił skalowanie desktopu w systemie
+
+
+
+
 Window::Window() = default;
 Window::~Window() = default;
 
-void Window::Create(const ApplicationDesc &desc) {
+void Window::Create(const ApplicationDesc &desc, Display display) {
+
+    m_scaling = display.GetScaling();
 
     setenv("GTK_THEME", "Adwaita:dark", 1);
 
     m_window = SDL_CreateWindow(
         desc.TITLE,
-        desc.WIDTH / desc.SCALING,
-        desc.HEIGHT / desc.SCALING,
+        desc.WIDTH / m_scaling,
+        desc.HEIGHT / m_scaling,
         SDL_WINDOW_VULKAN
     );
 
@@ -46,10 +56,9 @@ void Window::GetFramebufferSize(int& width, int& height) const {
     SDL_GetWindowSize(m_window, &width, &height);
 }
 
-void Window::SetWindowed(ApplicationDesc& desc) {
+void Window::SetWindowed(ApplicationDesc& desc, Display display) {
 
-    SDL_SetWindowSize(m_window, desc.WIDTH / desc.SCALING, desc.HEIGHT / desc.SCALING);
-    SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    UpdateSize(desc, display);
 
     SDL_SetWindowFullscreen(m_window, false);
 
@@ -71,10 +80,15 @@ void Window::SetFullscreen(ApplicationDesc& desc, Uint32 displayID) {
 
 }
 
-void Window::SetSize(ApplicationDesc& desc) {
-    SDL_SetWindowSize(m_window, desc.WIDTH / desc.SCALING, desc.HEIGHT / desc.SCALING);
+void Window::UpdateSize(ApplicationDesc& desc, Display display) {
+
+    m_scaling = display.GetScaling();
+
+    SDL_SetWindowSize(m_window, desc.WIDTH / m_scaling, desc.HEIGHT / m_scaling);
     SDL_SetWindowPosition(m_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+
 }
+
 
 SDL_Window* Window::GetHandle() const {
     return m_window;

@@ -1,4 +1,8 @@
 #include "VulkanTextureDescriptor.h"
+
+#include <iostream>
+#include <ostream>
+
 #include "RenderTarget.h"
 
 #include "../../../Engine/Core/Error/ErrorDialog.h"
@@ -12,11 +16,13 @@ void VulkanTextureDescriptor::Create(VkDevice device, RenderTarget& colorTarget,
     bindings[0].descriptorCount = 1;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     bindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[0].pImmutableSamplers = nullptr;
     // Depth
     bindings[1].binding = 1;
     bindings[1].descriptorCount = 1;
     bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].pImmutableSamplers = nullptr;
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -56,7 +62,6 @@ void VulkanTextureDescriptor::Create(VkDevice device, RenderTarget& colorTarget,
     depthInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     depthInfo.imageView = depthTarget.View;
     depthInfo.sampler = depthTarget.Sampler;
-
 
     // WRITE DESCRIPTOR
     VkWriteDescriptorSet writes[2]{};

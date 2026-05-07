@@ -1,5 +1,8 @@
-> SSAA
-> ASPECT RATIO
+> Filter nie działa - albo raczej źle jest dobrane rozdzielczość okna i ekranu w różnych etapach renderingu
+    Pomieszałem te rozdzielczości i nie wiem jakie gdzie powwinny być
+
+> SSAA - przynajmniej częściwo już jest
+> ASPECT RATIO - tego nie ma chyba w ogóle
 
 
 

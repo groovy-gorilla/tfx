@@ -20,7 +20,7 @@ void Application::Run() {
 
     m_display.Initialize();
 
-    m_window.Create(m_desc);
+    m_window.Create(m_desc, m_display);
 
     m_input.Initialize(SDL_SCANCODE_COUNT);
 

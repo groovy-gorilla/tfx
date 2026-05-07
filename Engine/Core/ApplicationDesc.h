@@ -19,17 +19,14 @@ struct ApplicationDesc {
 
     const char* TITLE                   = "Indigo Engine";
 
-    uint32_t WIDTH                      = 800;
-    uint32_t HEIGHT                     = 600;
+    uint32_t WIDTH                      = 320;
+    uint32_t HEIGHT                     = 200;
 
-    float SCALING                       = 1.0f;
-
-    bool FULLSCREEN                     = false;
+    bool FULLSCREEN                     = true;
     bool ASPECT_RATIO                   = false;
     bool VSYNC                          = true;
-
+    TextureFilter FILTER                = TextureFilter::Linear;
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
-    TextureFilter FILTER                = TextureFilter::Nearest;
 
     // AntiAliasing
     AntiAliasing AA_MODE                = AntiAliasing::None;

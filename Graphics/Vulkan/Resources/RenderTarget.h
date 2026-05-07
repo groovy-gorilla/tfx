@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+#include <ostream>
 #include <vulkan/vulkan.h>
 #include "../../../Engine/Core/ApplicationDesc.h"
 #include "../../../Engine/Core/Error/ErrorDialog.h"
@@ -15,23 +17,28 @@ struct RenderTarget {
             case TextureFilter::Nearest:
                 sampler.magFilter = VK_FILTER_NEAREST;
                 sampler.minFilter = VK_FILTER_NEAREST;
+                sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
                 break;
 
             case TextureFilter::Linear:
                 sampler.magFilter = VK_FILTER_LINEAR;
                 sampler.minFilter = VK_FILTER_LINEAR;
+                sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
                 break;
         }
 
-        sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         sampler.anisotropyEnable = VK_FALSE;
         sampler.maxAnisotropy = 1.0f;
         sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
         sampler.unnormalizedCoordinates = VK_FALSE;
         sampler.compareEnable = VK_FALSE;
-        sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+        sampler.minLod = 0.0f;
+        sampler.maxLod = 0.0f;
+        sampler.mipLodBias = 0.0f;
 
         VK_CHECK(vkCreateSampler(device, &sampler, nullptr, &Sampler));
 

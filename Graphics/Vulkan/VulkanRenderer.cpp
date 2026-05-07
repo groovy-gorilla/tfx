@@ -1,5 +1,8 @@
 #include "VulkanRenderer.h"
 
+#include <iostream>
+#include <ostream>
+
 #include "Core/VulkanDebug.h"
 #include "../../Engine/Core/Window.h"
 #include "../../Engine/Core/Error/ErrorDialog.h"
@@ -19,8 +22,12 @@ void VulkanRenderer::Initialize(Window& window, ApplicationDesc& desc) {
     m_physicalDevice.CreateSupportedSampleCounts();
     m_device.Create(m_physicalDevice.Get(), m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
 
+    VkExtent2D screenExtent;
+    screenExtent.width = 3440;
+    screenExtent.height = 1440;
+
     m_queues.Create(m_device.Get(), m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
-    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), extent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
+    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), screenExtent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
     m_commands.Create(m_device.Get(), m_physicalDevice.GetGraphicsQueueFamily(), static_cast<uint32_t>(m_swapchain.GetImages().size()));
     m_sync.Create(m_device.Get(), desc.MAX_FRAMES_IN_FLIGHT);
 
@@ -30,8 +37,8 @@ void VulkanRenderer::Initialize(Window& window, ApplicationDesc& desc) {
     m_scenePipeline.Create(m_device.Get(), m_sceneRenderPass.Get(), desc.AA_MODE, desc.MSAA_SAMPLES);
 
     // POST
-    m_postRenderPass.Create(m_device.Get(), extent, m_swapchain.GetImageFormat(), m_sceneResources.GetOutputColor(), m_sceneResources.GetOutputDepth());
-    m_postResources.Create(m_device.Get(), m_postRenderPass.Get(), extent, m_swapchain.GetImageViews());
+    m_postRenderPass.Create(m_device.Get(), m_swapchain.GetExtent(), m_swapchain.GetImageFormat(), m_sceneResources.GetOutputColor(), m_sceneResources.GetOutputDepth());
+    m_postResources.Create(m_device.Get(), m_postRenderPass.Get(), m_swapchain.GetExtent(), m_swapchain.GetImageViews());
 
 }
 
