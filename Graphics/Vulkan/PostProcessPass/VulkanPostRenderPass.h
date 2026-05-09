@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan.h>
 #include "../Resources/VulkanTextureDescriptor.h"
+#include "../../../Engine/Core/ApplicationDesc.h"
 
 class VulkanPostRenderPass {
 public:
@@ -10,16 +11,19 @@ public:
         VkExtent2D extent,
         VkFormat swapchainFormat,
         RenderTarget& sceneColor,
-        RenderTarget& sceneDepth);
+        RenderTarget& sceneDepth,
+        ApplicationDesc& desc);
 
     void Destroy(VkDevice device);
 
     void Render(
         VkCommandBuffer commandBuffer,
         VkFramebuffer framebuffer,
-        VkExtent2D extent);
+        VkExtent2D extent,
+        ApplicationDesc& desc);
 
     VkRenderPass Get() const { return m_renderPass; }
+    VulkanTextureDescriptor GetDescriptor() const { return m_sceneDescriptor; }
 
 private:
     VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;

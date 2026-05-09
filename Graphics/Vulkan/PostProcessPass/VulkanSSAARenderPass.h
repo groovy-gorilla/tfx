@@ -12,7 +12,8 @@ public:
         VkFormat swapchainFormat,
         RenderTarget& sceneColor,
         RenderTarget& sceneDepth,
-        RenderTarget& finalColor);
+        RenderTarget& finalColor,
+        ApplicationDesc& desc);
 
     void Destroy(VkDevice device);
 
@@ -21,6 +22,7 @@ public:
         VkExtent2D extent);
 
     VkRenderPass Get() const { return m_renderPass; }
+    VulkanTextureDescriptor GetDescriptor() const { return m_sceneDescriptor; }
 
 private:
     VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;

@@ -6,7 +6,7 @@
 
 class VulkanSwapchain {
 public:
-    void Create(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface,  VkExtent2D extent, uint32_t graphicsQueueFamily, uint32_t presentQueueFamily);
+    void Create(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface,  VkExtent2D extent, uint32_t graphicsQueueFamily, uint32_t presentQueueFamily, ApplicationDesc& desc);
     void Destroy(VkDevice device);
 
     VkSwapchainKHR Get() const { return m_swapchain; };
@@ -24,7 +24,7 @@ private:
 
 
     VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
-    VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& modes);
+    VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& modes, ApplicationDesc& desc);
     VkExtent2D ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities,  VkExtent2D extent);
     void CreateImageViews(VkDevice device);
     void DestroyImageViews(VkDevice device);

@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <ostream>
 
@@ -31,6 +32,7 @@ void Application::Run() {
     actions.Bind("Aspect", Key::A);
     actions.Bind("Filter", Key::F);
     actions.Bind("MSAA", Key::M);
+    actions.Bind("VSync", Key::V);
     actions.Bind("ResolutionUp", Key::Equals);
     actions.Bind("ResolutionDown", Key::Minus);
     actions.Bind("Monitor1", Key::Num1);
@@ -39,12 +41,31 @@ void Application::Run() {
     // VULKAN
     m_graphics.Initialize(m_display, m_window, m_desc);
 
+    auto lastTime = std::chrono::high_resolution_clock::now();
+    float timer = 0.0f;
+    uint32_t frames = 0;
+
     while (!m_window.ShouldClose()) {
 
-        //if (m_framebufferResized) {
-        //    m_framebufferResized = false;
-        //    m_graphics.RecreateSwapchain(m_window);
-        //}
+        auto currentTime = std::chrono::high_resolution_clock::now();
+        float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
+        lastTime = currentTime;
+        timer += deltaTime;
+        frames++;
+        if (timer >= 1.0f) {
+            std::cout << "FPS: " << frames << std::endl;
+            frames = 0;
+            timer = 0.0f;
+        }
+
+
+
+
+
+
+
+
+
 
         m_graphics.Render(m_desc);
 
@@ -112,9 +133,51 @@ void Application::Run() {
         }
 
         // ASPECT RATIO
-        //if (actions.IsActionPressed(m_input, "Aspect")) {
-        //    m_desc.aspectRatio = !m_desc.aspectRatio;
-        //}
+        if (actions.IsActionPressed(m_input, "Aspect")) {
+            m_desc.ASPECT_RATIO = !m_desc.ASPECT_RATIO;
+        }
+
+        // FILTER
+        if (actions.IsActionPressed(m_input, "Filter")) {
+            if (m_desc.FILTER == TextureFilter::Nearest) {
+                m_desc.FILTER = TextureFilter::Linear;
+            } else {
+                m_desc.FILTER = TextureFilter::Nearest;
+            }
+
+            vkDeviceWaitIdle(m_graphics.GetRenderer().GetDevice());
+
+            RenderTarget* postTarget = nullptr;
+
+            switch (m_desc.AA_MODE) {
+                case AntiAliasing::SSAA:
+                case AntiAliasing::SSAA_TAA:
+                    postTarget = &m_graphics.GetRenderer().GetSceneResources().FinalColor;
+                    break;
+                case AntiAliasing::MSAA:
+                case AntiAliasing::MSAA_TAA:
+                    postTarget = &m_graphics.GetRenderer().GetSceneResources().ResolveColor;
+                    break;
+                default:
+                    postTarget = &m_graphics.GetRenderer().GetSceneResources().SceneColor;
+                    break;
+            }
+
+            m_graphics.GetRenderer().GetPostRenderPass().GetDescriptor().UpdateSampler(m_graphics.GetRenderer().GetDevice(), *postTarget, m_desc.FILTER);
+            m_graphics.GetRenderer().GetSSAARenderPass().GetDescriptor().UpdateSampler(m_graphics.GetRenderer().GetDevice(), m_graphics.GetRenderer().GetSceneResources().SceneColor, m_desc.FILTER);
+
+            continue;
+
+        }
+
+        // VSYNC
+        if (actions.IsActionPressed(m_input, "VSync")) {
+            m_desc.VSYNC = !m_desc.VSYNC;
+            m_graphics.GetRenderer().RecreateSwapchain(m_display, m_window, m_desc);
+        }
+
+        // QUIT
+        if (actions.IsActionPressed(m_input, "Quit")) break;
 
         // WINDOWED
         //if (actions.IsActionPressed(m_input, "Windowed")) {
@@ -125,9 +188,6 @@ void Application::Run() {
         //        m_window.SetFullscreen(m_desc, m_display.GetPrimaryDisplay().id);
         //    }
         //}
-
-        // QUIT
-        if (actions.IsActionPressed(m_input, "Quit")) break;
 
         // SCREEN RESOLUTION
         //int size = m_display.GetDisplayModes().size();

@@ -1,13 +1,8 @@
 #include "VulkanTextureDescriptor.h"
-
-#include <iostream>
-#include <ostream>
-
 #include "RenderTarget.h"
-
 #include "../../../Engine/Core/Error/ErrorDialog.h"
 
-void VulkanTextureDescriptor::Create(VkDevice device, RenderTarget& colorTarget, RenderTarget& depthTarget) {
+void VulkanTextureDescriptor::Create(VkDevice device, RenderTarget& colorTarget, RenderTarget& depthTarget, TextureFilter filter) {
 
     // DESCRIPTOR SET LAYOUT
     VkDescriptorSetLayoutBinding bindings[2]{};
@@ -57,11 +52,11 @@ void VulkanTextureDescriptor::Create(VkDevice device, RenderTarget& colorTarget,
     VkDescriptorImageInfo colorInfo{};
     colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     colorInfo.imageView = colorTarget.View;
-    colorInfo.sampler = colorTarget.Sampler;
+    colorInfo.sampler = (filter == TextureFilter::Nearest) ? colorTarget.NearestSampler : colorTarget.LinearSampler;
     VkDescriptorImageInfo depthInfo{};
     depthInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
     depthInfo.imageView = depthTarget.View;
-    depthInfo.sampler = depthTarget.Sampler;
+    depthInfo.sampler = (filter == TextureFilter::Nearest) ? depthTarget.NearestSampler : depthTarget.LinearSampler;
 
     // WRITE DESCRIPTOR
     VkWriteDescriptorSet writes[2]{};
@@ -95,5 +90,26 @@ void VulkanTextureDescriptor::Destroy(VkDevice device) {
         vkDestroyDescriptorSetLayout(device, m_layout, nullptr);
         m_layout = VK_NULL_HANDLE;
     }
+
+}
+
+void VulkanTextureDescriptor::UpdateSampler(VkDevice device, RenderTarget& color, TextureFilter filter) {
+
+    VkDescriptorImageInfo colorInfo{};
+    colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    colorInfo.imageView = color.View;
+    colorInfo.sampler = (filter == TextureFilter::Nearest) ? color.NearestSampler : color.LinearSampler;
+
+    VkWriteDescriptorSet colorWrite{};
+    colorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    colorWrite.dstSet = m_set;
+    colorWrite.dstBinding = 0;
+    colorWrite.dstArrayElement = 0;
+    colorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+
+    colorWrite.descriptorCount = 1;
+    colorWrite.pImageInfo = &colorInfo;
+
+    vkUpdateDescriptorSets(device, 1, &colorWrite, 0, nullptr);
 
 }

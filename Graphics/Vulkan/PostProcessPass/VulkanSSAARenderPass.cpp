@@ -5,7 +5,7 @@
 #include <ostream>
 
 
-void VulkanSSAARenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat swapchainFormat, RenderTarget& sceneColor, RenderTarget& sceneDepth, RenderTarget& finalColor) {
+void VulkanSSAARenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat swapchainFormat, RenderTarget& sceneColor, RenderTarget& sceneDepth, RenderTarget& finalColor, ApplicationDesc& desc) {
 
     // RENDER PASS
     VkAttachmentDescription colorAttachment{};
@@ -40,7 +40,7 @@ void VulkanSSAARenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
     VK_CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &m_renderPass));
 
     // DESCRIPTOR
-    m_sceneDescriptor.Create(device, sceneColor, sceneDepth);
+    m_sceneDescriptor.Create(device, sceneColor, sceneDepth, desc.FILTER);
     m_descriptorSetLayout = m_sceneDescriptor.GetLayout();
 
     // PIPELINE LAYOUT
@@ -194,6 +194,7 @@ void VulkanSSAARenderPass::Render(VkCommandBuffer commandBuffer, VkExtent2D exte
     vkCmdEndRenderPass(commandBuffer);
 
 }
+
 
 void VulkanSSAARenderPass::Destroy(VkDevice device) {
 

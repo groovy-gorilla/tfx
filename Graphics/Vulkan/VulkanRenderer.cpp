@@ -28,13 +28,13 @@ void VulkanRenderer::Initialize(Display& display, Window& window, ApplicationDes
     m_device.Create(m_physicalDevice.Get(), m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
 
     m_queues.Create(m_device.Get(), m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
-    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), m_windowExtent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily());
+    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), m_windowExtent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily(), desc);
     m_commands.Create(m_device.Get(), m_physicalDevice.GetGraphicsQueueFamily(), static_cast<uint32_t>(m_swapchain.GetImages().size()));
     m_sync.Create(m_device.Get(), desc.MAX_FRAMES_IN_FLIGHT);
 
     // SCENE
     m_sceneRenderPass.Create(m_device.Get(), m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc.AA_MODE, desc.MSAA_SAMPLES);
-    m_sceneResources.Create(m_physicalDevice.Get(), m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc.AA_MODE, desc.MSAA_SAMPLES, desc.SSAA_SCALE, desc.FILTER, m_sceneRenderPass.Get());
+    m_sceneResources.Create(m_physicalDevice.Get(), m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc, m_sceneRenderPass.Get());
     m_scenePipeline.Create(m_device.Get(), m_sceneRenderPass.Get(), desc.AA_MODE, desc.MSAA_SAMPLES);
 
     // POST
@@ -51,8 +51,8 @@ void VulkanRenderer::Initialize(Display& display, Window& window, ApplicationDes
         default:
             break;
     }
-    m_ssaaRenderPass.Create(m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), m_sceneResources.SceneColor, m_sceneResources.SceneDepth, m_sceneResources.FinalColor);
-    m_postRenderPass.Create(m_device.Get(), m_windowExtent, m_swapchain.GetImageFormat(), *postColor, m_sceneResources.ResolveDepth);
+    m_ssaaRenderPass.Create(m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), m_sceneResources.SceneColor, m_sceneResources.SceneDepth, m_sceneResources.FinalColor, desc);
+    m_postRenderPass.Create(m_device.Get(), m_windowExtent, m_swapchain.GetImageFormat(), *postColor, m_sceneResources.ResolveDepth, desc);
     m_postResources.Create(m_device.Get(), m_postRenderPass.Get(), m_windowExtent, m_swapchain.GetImageViews());
 
 }
@@ -108,7 +108,7 @@ void VulkanRenderer::RecordCommandBuffer(uint32_t imageIndex, ApplicationDesc& d
     }
 
     // POST PASS
-    m_postRenderPass.Render(commandBuffer, m_postResources.GetFramebuffer(imageIndex), m_swapchain.GetExtent());
+    m_postRenderPass.Render(commandBuffer, m_postResources.GetFramebuffer(imageIndex), m_swapchain.GetExtent(), desc);
 
     // END COMMAND BUFFER
     vkEndCommandBuffer(commandBuffer);
@@ -165,6 +165,75 @@ void VulkanRenderer::Render(ApplicationDesc& desc) {
     VK_CHECK(vkQueuePresentKHR(m_queues.GetPresent(), &presentInfo));
 
     m_sync.NextFrame(desc.MAX_FRAMES_IN_FLIGHT);
+
+}
+
+void VulkanRenderer::RecreateSwapchain(Display& display, Window& window, ApplicationDesc& desc) {
+
+    vkDeviceWaitIdle(m_device.Get());
+
+    // NOWE WINDOW EXTENT
+    m_windowExtent = window.GetWindowExtent(display, desc);
+
+    // DESTROY
+    m_postResources.Destroy(m_device.Get());
+    m_swapchain.Destroy(m_device.Get());
+
+    // CREATE
+    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), m_windowExtent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily(),desc);
+
+    m_postResources.Create(m_device.Get(), m_postRenderPass.Get(), m_windowExtent, m_swapchain.GetImageViews());
+
+}
+
+void VulkanRenderer::RecreateRenderer(Display& display, Window& window, ApplicationDesc& desc) {
+
+    vkDeviceWaitIdle(m_device.Get());
+
+    // DESTROY
+    m_postResources.Destroy(m_device.Get());
+    m_postRenderPass.Destroy(m_device.Get());
+    m_ssaaRenderPass.Destroy(m_device.Get());
+    m_scenePipeline.Destroy(m_device.Get());
+    m_sceneResources.Destroy(m_device.Get());
+    m_sceneRenderPass.Destroy(m_device.Get());
+    m_swapchain.Destroy(m_device.Get());
+
+    // EXTENTS
+    m_renderExtent = window.GetRenderExtent(desc);
+    m_windowExtent = window.GetWindowExtent(display, desc);
+
+    // SWAPCHAIN
+    m_swapchain.Create(m_physicalDevice.Get(), m_device.Get(), m_surface.Get(), m_windowExtent, m_physicalDevice.GetGraphicsQueueFamily(), m_physicalDevice.GetPresentQueueFamily(), desc);
+
+    // SCENE
+    m_sceneRenderPass.Create(m_device.Get(), m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc.AA_MODE, desc.MSAA_SAMPLES);
+    m_sceneResources.Create(m_physicalDevice.Get(), m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc, m_sceneRenderPass.Get());
+    m_scenePipeline.Create(m_device.Get(), m_sceneRenderPass.Get(), desc.AA_MODE, desc.MSAA_SAMPLES);
+
+    // SSAA
+    m_ssaaRenderPass.Create(m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), m_sceneResources.SceneColor, m_sceneResources.SceneDepth, m_sceneResources.FinalColor, desc);
+
+    // POST TARGET
+    RenderTarget* postTarget = nullptr;
+
+    switch (desc.AA_MODE) {
+        case AntiAliasing::SSAA:
+        case AntiAliasing::SSAA_TAA:
+            postTarget = &m_sceneResources.FinalColor;
+            break;
+        case AntiAliasing::MSAA:
+        case AntiAliasing::MSAA_TAA:
+            postTarget = &m_sceneResources.ResolveColor;
+            break;
+        default:
+            postTarget = &m_sceneResources.SceneColor;
+            break;
+    }
+
+    // POST
+    m_postRenderPass.Create(m_device.Get(), m_windowExtent, m_swapchain.GetImageFormat(), *postTarget, m_sceneResources.ResolveDepth, desc);
+    m_postResources.Create(m_device.Get(), m_postRenderPass.Get(), m_windowExtent, m_swapchain.GetImageViews());
 
 }
 

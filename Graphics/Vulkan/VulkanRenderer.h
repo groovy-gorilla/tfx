@@ -34,8 +34,13 @@ public:
 
     void Render(ApplicationDesc& desc);
 
+    void RecreateSwapchain(Display& display, Window& window, ApplicationDesc& desc);
+    void RecreateRenderer(Display& display, Window& window, ApplicationDesc& desc);
 
-
+    VkDevice GetDevice() { return m_device.Get(); }
+    VulkanSceneResources& GetSceneResources() { return m_sceneResources; }
+    VulkanPostRenderPass& GetPostRenderPass() { return m_postRenderPass; }
+    VulkanSSAARenderPass& GetSSAARenderPass() { return m_ssaaRenderPass; }
 
 private:
     VulkanInstance m_instance;

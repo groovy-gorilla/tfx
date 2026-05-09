@@ -9,6 +9,7 @@ enum class Key {
     A,
     F,
     M,
+    V,
 
     Equals,
     Minus,

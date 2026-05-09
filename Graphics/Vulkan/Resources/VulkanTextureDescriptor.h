@@ -2,16 +2,22 @@
 
 #include <vulkan/vulkan.h>
 
+enum class TextureFilter;
 class RenderTarget;
 
 class VulkanTextureDescriptor {
 public:
 
-    void Create(VkDevice device, RenderTarget& colorTarget, RenderTarget& depthTarget);
+    void Create(VkDevice device, RenderTarget& colorTarget, RenderTarget& depthTarget, TextureFilter filter);
     void Destroy(VkDevice device);
 
     VkDescriptorSetLayout GetLayout() const { return m_layout; }
     VkDescriptorSet GetSet() const { return m_set; }
+
+    void UpdateSampler(
+        VkDevice device,
+        RenderTarget& color,
+        TextureFilter filter);
 
 private:
     VkDescriptorSetLayout m_layout = VK_NULL_HANDLE;

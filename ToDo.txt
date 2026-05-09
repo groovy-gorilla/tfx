@@ -1,4 +1,19 @@
-> ASPECT RATIO - tego nie ma chyba w ogóle
+> Windowed/Fullscreen switching
+> Resolution switching
+> Pause on minimized window
+> None-MSAA-SSAA-None switching
+
+
+| Setting              | Action            |
+| -------------------- | ----------------- |
+| FILTER               | UpdateSampler     | DONE
+| VSYNC                | RecreateSwapchain | DONE
+| ASPECT_RATIO         | runtime only      | DONE
+| WINDOW SIZE          | RecreateRenderer  | może być zmiana rozdielczości ekranu, wtedy okno fullscreen też zmienia rozmiar (chociaż kto normalny to robi)
+| FULLSCREEN/WINDOWED  | RecreateRenderer  |
+| ANTIALLIASING        | RecreateRenderer  |
+| RESOLUTION SWITCHING | RecreateRenderer  |
+
 
 
 

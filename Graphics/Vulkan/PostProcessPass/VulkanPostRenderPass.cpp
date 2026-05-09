@@ -1,10 +1,11 @@
 #include "VulkanPostRenderPass.h"
 #include "../Utils/VulkanUtils.h"
 #include "../../../Engine/Core/Error/ErrorDialog.h"
+#include "../../../Engine/Core/ApplicationDesc.h"
 #include <iostream>
 #include <ostream>
 
-void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat swapchainFormat, RenderTarget& sceneColor, RenderTarget& sceneDepth) {
+void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat swapchainFormat, RenderTarget& sceneColor, RenderTarget& sceneDepth, ApplicationDesc& desc) {
 
     // RENDER PASS
     VkAttachmentDescription colorAttachment{};
@@ -39,7 +40,7 @@ void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
     VK_CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &m_renderPass));
 
     // DESCRIPTOR
-    m_sceneDescriptor.Create(device, sceneColor, sceneDepth);
+    m_sceneDescriptor.Create(device, sceneColor, sceneDepth, desc.FILTER);
     m_descriptorSetLayout = m_sceneDescriptor.GetLayout();
 
     // PIPELINE LAYOUT
@@ -101,6 +102,16 @@ void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
     VkRect2D scissor{};
     scissor.extent = extent;
 
+    VkDynamicState dynamicStates[] = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR
+    };
+
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = 2;
+    dynamicState.pDynamicStates = dynamicStates;
+
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
@@ -155,6 +166,7 @@ void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
     pipelineInfo.layout = m_pipelineLayout;
     pipelineInfo.renderPass = m_renderPass;
     pipelineInfo.subpass = 0;
+    pipelineInfo.pDynamicState = &dynamicState;
 
     VK_CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline));
 
@@ -165,7 +177,7 @@ void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
 
 }
 
-void VulkanPostRenderPass::Render( VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, VkExtent2D extent) {
+void VulkanPostRenderPass::Render(VkCommandBuffer commandBuffer, VkFramebuffer framebuffer, VkExtent2D extent, ApplicationDesc& desc) {
 
     VkClearValue clear{};
     clear.color = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -181,6 +193,56 @@ void VulkanPostRenderPass::Render( VkCommandBuffer commandBuffer, VkFramebuffer 
     vkCmdBeginRenderPass(commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+
+    VkViewport viewport{};
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+
+    VkRect2D scissor{};
+
+    if (desc.ASPECT_RATIO) {
+
+        float targetAspect = static_cast<float>(desc.WIDTH) / static_cast<float>(desc.HEIGHT);
+        float windowAspect = static_cast<float>(extent.width) / static_cast<float>(extent.height);
+        float viewportWidth = static_cast<float>(extent.width);
+        float viewportHeight = static_cast<float>(extent.height);
+        float viewportX = 0.0f;
+        float viewportY = 0.0f;
+
+        if (windowAspect > targetAspect) {
+            viewportWidth = viewportHeight * targetAspect;
+            viewportX = (extent.width - viewportWidth) * 0.5f;
+        } else {
+            viewportHeight = viewportWidth / targetAspect;
+            viewportY = (extent.height - viewportHeight) * 0.5f;
+        }
+
+        viewport.x = viewportX;
+        viewport.y = viewportY;
+        viewport.width = viewportWidth;
+        viewport.height = viewportHeight;
+
+        scissor.offset = {
+            static_cast<int32_t>(viewportX),
+            static_cast<int32_t>(viewportY)
+        };
+
+        scissor.extent = {
+            static_cast<uint32_t>(viewportWidth),
+            static_cast<uint32_t>(viewportHeight)
+        };
+    } else {
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(extent.width);
+        viewport.height = static_cast<float>(extent.height);
+
+        scissor.offset = { 0, 0 };
+        scissor.extent = extent;
+    }
+
+    vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+    vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     VkDescriptorSet descriptorSet = m_sceneDescriptor.GetSet();
 

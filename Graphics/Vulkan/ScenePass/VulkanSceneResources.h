@@ -6,7 +6,7 @@
 
 class VulkanSceneResources {
 public:
-    void Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, VkFormat colorFormat, VkFormat depthFormat, AntiAliasing aaMode, VkSampleCountFlagBits msaaSamples, float ssaaScale, TextureFilter filterMode, VkRenderPass renderPass);
+    void Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, VkFormat colorFormat, VkFormat depthFormat, ApplicationDesc& desc, VkRenderPass renderPass);
     void Destroy(VkDevice device);
 
     VkFramebuffer GetFramebuffer() const { return m_framebuffer; }

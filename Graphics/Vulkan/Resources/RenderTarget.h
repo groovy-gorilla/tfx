@@ -8,47 +8,61 @@
 
 struct RenderTarget {
 
-    void CreateSampler(VkDevice device, TextureFilter filter) {
+    void CreateSamplers(VkDevice device) {
 
-        VkSamplerCreateInfo sampler{};
-        sampler.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        // NEAREST
+        VkSamplerCreateInfo samplerNearest{};
+        samplerNearest.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerNearest.magFilter = VK_FILTER_NEAREST;
+        samplerNearest.minFilter = VK_FILTER_NEAREST;
+        samplerNearest.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+        samplerNearest.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerNearest.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerNearest.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerNearest.anisotropyEnable = VK_FALSE;
+        samplerNearest.maxAnisotropy = 1.0f;
+        samplerNearest.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerNearest.unnormalizedCoordinates = VK_FALSE;
+        samplerNearest.compareEnable = VK_FALSE;
+        samplerNearest.minLod = 0.0f;
+        samplerNearest.maxLod = 0.0f;
+        samplerNearest.mipLodBias = 0.0f;
 
-        switch (filter) {
-            case TextureFilter::Nearest:
-                sampler.magFilter = VK_FILTER_NEAREST;
-                sampler.minFilter = VK_FILTER_NEAREST;
-                sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
-                break;
+        VK_CHECK(vkCreateSampler(device, &samplerNearest, nullptr, &NearestSampler));
 
-            case TextureFilter::Linear:
-                sampler.magFilter = VK_FILTER_LINEAR;
-                sampler.minFilter = VK_FILTER_LINEAR;
-                sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-                break;
-        }
 
-        sampler.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        sampler.anisotropyEnable = VK_FALSE;
-        sampler.maxAnisotropy = 1.0f;
-        sampler.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        sampler.unnormalizedCoordinates = VK_FALSE;
-        sampler.compareEnable = VK_FALSE;
+        // LINEAR
+        VkSamplerCreateInfo samplerLinear{};
+        samplerLinear.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        samplerLinear.magFilter = VK_FILTER_LINEAR;
+        samplerLinear.minFilter = VK_FILTER_LINEAR;
+        samplerLinear.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+        samplerLinear.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerLinear.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerLinear.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+        samplerLinear.anisotropyEnable = VK_FALSE;
+        samplerLinear.maxAnisotropy = 1.0f;
+        samplerLinear.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        samplerLinear.unnormalizedCoordinates = VK_FALSE;
+        samplerLinear.compareEnable = VK_FALSE;
+        samplerLinear.minLod = 0.0f;
+        samplerLinear.maxLod = 0.0f;
+        samplerLinear.mipLodBias = 0.0f;
 
-        sampler.minLod = 0.0f;
-        sampler.maxLod = 0.0f;
-        sampler.mipLodBias = 0.0f;
-
-        VK_CHECK(vkCreateSampler(device, &sampler, nullptr, &Sampler));
+        VK_CHECK(vkCreateSampler(device, &samplerLinear, nullptr, &LinearSampler));
 
     }
 
     void Destroy(VkDevice device) noexcept {
 
-        if (Sampler) {
-            vkDestroySampler(device, Sampler, nullptr);
-            Sampler = VK_NULL_HANDLE;
+        if (NearestSampler) {
+            vkDestroySampler(device, NearestSampler, nullptr);
+            NearestSampler = VK_NULL_HANDLE;
+        }
+
+        if (LinearSampler) {
+            vkDestroySampler(device, LinearSampler, nullptr);
+            LinearSampler = VK_NULL_HANDLE;
         }
 
         if (View) {
@@ -70,10 +84,11 @@ struct RenderTarget {
 
     VkImage Image = VK_NULL_HANDLE;
     VkImageView View = VK_NULL_HANDLE;
-    VkSampler Sampler = VK_NULL_HANDLE;
     VkDeviceMemory Memory = VK_NULL_HANDLE;
-
     VkFormat Format = VK_FORMAT_UNDEFINED;
+
+    VkSampler NearestSampler = VK_NULL_HANDLE;
+    VkSampler LinearSampler = VK_NULL_HANDLE;
 
     uint32_t Width = 0;
     uint32_t Height = 0;
