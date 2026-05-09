@@ -1,7 +1,6 @@
 #pragma once
+
 #include "KeyCodes.h"
-#include <cstdint>
-#include <vector>
 
 class Input {
 

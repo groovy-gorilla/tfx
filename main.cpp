@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Engine/Core/Error/ErrorDialog.h"
+#include "Engine/Debug/ErrorDialog.h"
 
 #include "Engine/Core/Application.h"
 

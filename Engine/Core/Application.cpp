@@ -1,14 +1,5 @@
+#include "pch.h"
 #include "Application.h"
-
-#include <algorithm>
-#include <chrono>
-#include <iostream>
-#include <ostream>
-
-#include "Window.h"
-#include <stdexcept>
-#include <SDL3/SDL.h>
-#include "../../Engine/Platform/SDL/SDLInput.h"
 
 void Application::Run() {
 

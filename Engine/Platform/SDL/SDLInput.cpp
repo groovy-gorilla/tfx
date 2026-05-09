@@ -1,3 +1,4 @@
+#include "pch.h"
 #include "SDLInput.h"
 
 Key TranslateKey(SDL_Scancode scancode) {

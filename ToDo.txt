@@ -1,3 +1,7 @@
+- zrób odpowiednie drzewo katalogów
+-
+
+
 
 > Texture
 > Bitmap

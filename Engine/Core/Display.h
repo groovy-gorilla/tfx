@@ -1,7 +1,4 @@
 #pragma once
-#include <string>
-#include <vector>
-#include <SDL3/SDL.h>
 
 struct Mode {
     int width;
@@ -20,9 +17,9 @@ class Display {
 public:
     void Initialize();
 
-    const DisplayInfo& GetPrimaryDisplay() const;                   // Pobiera główny monitor
+    [[nodiscard]] const DisplayInfo& GetPrimaryDisplay() const;                   // Pobiera główny monitor
 
-    std::vector<Mode> GetDisplayModes() const;                      // Pobiera tryby monitora
+    [[nodiscard]] std::vector<Mode> GetDisplayModes() const;                      // Pobiera tryby monitora
     const SDL_DisplayMode* GetDisplayNativeMode();                  // Pobiera tryb natywny monitora
     const SDL_DisplayMode* GetCurrentDisplayMode();                 // Pobiera aktualny tryb monitora
 

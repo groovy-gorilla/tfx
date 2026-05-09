@@ -1,12 +1,14 @@
 #pragma once
 
+#include "ApplicationDesc.h"
 #include "Display.h"
 #include "Window.h"
-#include "ApplicationDesc.h"
-#include "../../Engine/Input/Input.h"
-#include "../../Engine/Input/InputMapping.h"
-#include "../../Engine/Platform/SDL/SDLInput.h"
-#include "../../Graphics/Graphics.h"
+#include "Input/Input.h"
+#include "Input/InputMapping.h"
+#include "Platform/SDL/SDLInput.h"
+#include "Graphics/Graphics.h"
+
+class Display;
 
 class Application {
 public:

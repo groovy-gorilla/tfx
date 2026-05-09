@@ -24,10 +24,10 @@ IndigoEngine/
 │   │
 │   ├── Core/
 │   │   ├── Application (main loop)
+│   │   ├── ApplicationDesc
 │   │   ├── Window
 │   │   ├── Display
-│   │   ├── Time
-│   │   └── Logger 
+│   │   └── ErrorDialog
 │   │   
 │   ├── Input/
 │   │   ├── Input
@@ -39,7 +39,44 @@ IndigoEngine/
 │       └── SDL/
 │           └── SDLInput
 │
-└── App/
+└── Graphics
+        Vulkan
+            Core
+                Instance
+                Surface
+                PhysicalDevice
+                Device
+            Command
+                CommandPool
+                CommandBuffer
+            Sync
+                Fence
+                Semaphore
+            Swapchain
+                Swapchain
+                RenderFrame
+            Debug
+                ValidationLayers
+                DebugMessengers
+                Debug
+                Queues
+                Swapchain
+                Sync
+                Validation
+            
+            ScenePass
+                SceneRenderPass
+                SceneResources
+                ScenePipeline
+            PostProcessPass
+                SSAARenderPass
+                PostRenderPass
+                PostResources
+            Resources
+                RenderTarget
+                TextureDescriptor
+            Renderer
+            Utils
 ```
 
 ## Build

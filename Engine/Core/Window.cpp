@@ -1,20 +1,5 @@
+#include "pch.h"
 #include "Window.h"
-
-#include <iostream>
-#include <stdexcept>
-
-#include "Display.h"
-
-
-
-// Okno powinno mieć możliwość UpdateScaling w przypadku, gdyby w trakcie działania aplikacji
-// użytkownik zmienił skalowanie desktopu w systemie
-
-
-
-
-Window::Window() = default;
-Window::~Window() = default;
 
 void Window::Create(ApplicationDesc &desc, Display& display) {
 

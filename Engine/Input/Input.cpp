@@ -1,5 +1,5 @@
+#include "pch.h"
 #include "Input.h"
-#include <cstring>
 
 Input::Input() {}
 Input::~Input() = default;

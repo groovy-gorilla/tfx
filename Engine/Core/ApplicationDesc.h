@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include "pch.h"
 
 enum class AntiAliasing {
     None,
@@ -17,7 +17,7 @@ enum class TextureFilter {
 
 struct ApplicationDesc {
 
-    const char* TITLE                   = "Indigo Engine";
+    const char* TITLE                   = "TFX";
 
     uint32_t WIDTH                      = 800;
     uint32_t HEIGHT                     = 600;

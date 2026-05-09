@@ -1,7 +1,6 @@
 #pragma once
 
-#include <SDL3/SDL.h>
-#include "../../../Engine/Input/Input.h"
+#include "Input/Input.h"
 
 class SDLInput {
 public:

@@ -1,18 +1,15 @@
 #pragma once
 
 #include "ApplicationDesc.h"
-#include <SDL3/SDL.h>
 #include "Display.h"
 
 class Window {
 public:
-    Window();
-    ~Window();
 
     void Create(ApplicationDesc& desc, Display& display);
     void Destroy();
 
-    bool ShouldClose() const;
+    [[nodiscard]] bool ShouldClose() const;
     void SetShouldClose(bool value);
 
     void SetWindowed(ApplicationDesc& desc, Display& display);
@@ -21,7 +18,7 @@ public:
     void SetWindowSize(ApplicationDesc& desc, Display& display);
 
     // Vulkan
-    SDL_Window* GetHandle() const;
+    [[nodiscard]] SDL_Window* GetHandle() const;
 
     VkExtent2D GetRenderExtent(ApplicationDesc& desc);
     VkExtent2D GetWindowExtent(Display& display, ApplicationDesc& desc);
@@ -30,7 +27,7 @@ private:
     SDL_Window* m_window = nullptr;
     bool m_shouldClose = false;
 
-    VkExtent2D m_renderExtent;
-    VkExtent2D m_windowExtent;
+    VkExtent2D m_renderExtent = {};
+    VkExtent2D m_windowExtent = {};
 
 };

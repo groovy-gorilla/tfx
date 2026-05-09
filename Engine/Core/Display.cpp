@@ -1,10 +1,6 @@
+#include "pch.h"
 #include "Display.h"
 
-#include <algorithm>
-#include <iostream>
-#include <limits>
-#include <ostream>
-#include <stdexcept>
 
 void Display::Initialize() {
 
