@@ -14,7 +14,9 @@ public:
                 VkDevice device,
                 VkExtent2D extent,
                 RenderTarget& outputColor,
-                ApplicationDesc& desc);
+                ApplicationDesc& desc,
+                VkCommandPool commandPool,
+                VkQueue graphicsQueue);
 
     void Render(VkCommandBuffer commandBuffer,
                 VkExtent2D extent,
@@ -63,10 +65,11 @@ private:
                              VkExtent2D extent);
 
     // NEIGHBORHOOD PASS
-    void CreateNeighborhoodRenderPass(VkDevice device);
+    void CreateNeighborhoodRenderPass(VkDevice device, RenderTarget& outputColor);
 
     void CreateNeighborhoodFramebuffer(VkDevice device,
-                                       VkExtent2D extent);
+                                       VkExtent2D extent,
+                                       RenderTarget& outputColor);
 
     void CreateNeighborhoodDescriptors(VkDevice device,
                                        ApplicationDesc& desc);
@@ -79,13 +82,10 @@ private:
     // DEVICE
     VkDevice m_device = VK_NULL_HANDLE;
 
-    // OUTPUT
-    RenderTarget* m_outputColor = nullptr;
-
     // INTERMEDIATE TARGETS
-    RenderTarget m_edgeTarget{};
+public:    RenderTarget m_edgeTarget{};
     RenderTarget m_blendTarget{};
-
+private:
     // SMAA LOOKUP TEXTURES
     RenderTarget m_areaTexture{};
     RenderTarget m_searchTexture{};
@@ -119,5 +119,8 @@ private:
 
     VulkanTextureDescriptor m_neighborhoodDescriptor{};
     VkDescriptorSetLayout m_neighborhoodDescriptorLayout = VK_NULL_HANDLE;
+
+    VkCommandPool m_commandPool{};
+    VkQueue m_graphicsQueue{};
 
 };

@@ -21,7 +21,7 @@ struct ApplicationDesc {
     const char* TITLE                   = "TFX";
 
     uint32_t WIDTH                      = 320;
-    uint32_t HEIGHT                     = 200;
+    uint32_t HEIGHT                     = 240;
 
     bool FULLSCREEN                     = false;
     bool ASPECT_RATIO                   = true;

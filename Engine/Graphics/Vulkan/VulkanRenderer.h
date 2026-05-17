@@ -14,6 +14,7 @@
 #include "Core/VulkanCommands.h"
 #include "Core/VulkanSync.h"
 #include "Core/VulkanQueues.h"
+#include "PostProcessPass/VulkanSMAARenderPass.h"
 #include "PostProcessPass/VulkanSSAARenderPass.h"
 
 struct ViewportRect {
@@ -60,6 +61,7 @@ private:
 
     // SCREEN
     VulkanPostRenderPass m_postRenderPass;
+    VulkanSMAARenderPass m_smaaRenderPass;
     VulkanSSAARenderPass m_ssaaRenderPass;
     VulkanPostResources m_postResources;
 

@@ -13,4 +13,3 @@ const char* GetFileName(const char* path);
             VulkanThrowError(#call, result, GetFileName(__FILE__), __LINE__);       \
         }                                                                           \
     } while (0)
-

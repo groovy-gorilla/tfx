@@ -33,8 +33,11 @@ void VulkanRenderer::Initialize(Display& display, Window& window, ApplicationDes
     m_sceneResources.Create(m_physicalDevice.Get(), m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc, m_sceneRenderPass.Get());
     m_scenePipeline.Create(m_device.Get(), m_sceneRenderPass.Get(), desc.AA_MODE, desc.MSAA_SAMPLES);
 
+    // SMAA
+    m_smaaRenderPass.Create(m_physicalDevice.Get(), m_device.Get(), m_renderExtent, m_sceneResources.SMAAColor, desc, m_commands.GetPool(), m_queues.GetGraphics());
+
     // SSAA
-    m_ssaaRenderPass.Create(m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), /*IN*/m_sceneResources.SceneColor, /*IN*/m_sceneResources.SceneDepth, /*OUT*/m_sceneResources.FinalColor, desc);
+    m_ssaaRenderPass.Create(m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), /*IN*/m_sceneResources.SceneColor, /*IN*/m_sceneResources.SceneDepth, /*OUT*/m_sceneResources.SSAAColor, desc);
 
     // POST
     m_postRenderPass.Create(m_device.Get(), m_windowExtent, m_swapchain.GetImageFormat(), desc);
@@ -49,6 +52,7 @@ void VulkanRenderer::Shutdown(ApplicationDesc& desc) {
     m_postResources.Destroy(m_device.Get());
     m_postRenderPass.Destroy(m_device.Get());
     m_ssaaRenderPass.Destroy(m_device.Get());
+    m_smaaRenderPass.Destroy(m_device.Get());
     m_scenePipeline.Destroy(m_device.Get());
     m_sceneResources.Destroy(m_device.Get());
     m_sceneRenderPass.Destroy(m_device.Get());
@@ -98,7 +102,13 @@ void VulkanRenderer::RecordCommandBuffer(VkDevice device, uint32_t imageIndex, A
     // SSAA
     if (desc.AA_MODE == AntiAliasing::SSAA || desc.AA_MODE == AntiAliasing::SSAA_SMAA) {
         m_ssaaRenderPass.Render(commandBuffer, m_renderExtent, m_sync.GetCurrentFrame());
-        currentColor = &m_sceneResources.FinalColor;
+        currentColor = &m_sceneResources.SSAAColor;
+    }
+
+    // SMAA
+    if (desc.AA_MODE == AntiAliasing::SMAA || desc.AA_MODE == AntiAliasing::MSAA_SMAA || desc.AA_MODE == AntiAliasing::SSAA_SMAA) {
+        m_smaaRenderPass.Render(commandBuffer, m_renderExtent, m_sync.GetCurrentFrame(), *currentColor);
+        currentColor = &m_sceneResources.SMAAColor;
     }
 
     // POST PASS
@@ -193,6 +203,7 @@ void VulkanRenderer::RecreateRenderer(Display& display, Window& window, Applicat
     // DESTROY
     m_postResources.Destroy(m_device.Get());
     m_postRenderPass.Destroy(m_device.Get());
+    m_smaaRenderPass.Destroy(m_device.Get());
     m_ssaaRenderPass.Destroy(m_device.Get());
     m_scenePipeline.Destroy(m_device.Get());
     m_sceneResources.Destroy(m_device.Get());
@@ -211,8 +222,11 @@ void VulkanRenderer::RecreateRenderer(Display& display, Window& window, Applicat
     m_sceneResources.Create(m_physicalDevice.Get(), m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), FindDepthFormat(m_physicalDevice.Get()), desc, m_sceneRenderPass.Get());
     m_scenePipeline.Create(m_device.Get(), m_sceneRenderPass.Get(), desc.AA_MODE, desc.MSAA_SAMPLES);
 
+    // SMAA
+    m_smaaRenderPass.Create(m_physicalDevice.Get(), m_device.Get(), m_renderExtent, m_sceneResources.SMAAColor, desc, m_commands.GetPool(), m_device.GetGraphicsQueue());
+
     // SSAA
-    m_ssaaRenderPass.Create(m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), /*IN*/m_sceneResources.SceneColor, /*IN*/m_sceneResources.SceneDepth, /*OUT*/m_sceneResources.FinalColor, desc);
+    m_ssaaRenderPass.Create(m_device.Get(), m_renderExtent, m_swapchain.GetImageFormat(), /*IN*/m_sceneResources.SceneColor, /*IN*/m_sceneResources.SceneDepth, /*OUT*/m_sceneResources.SSAAColor, desc);
 
     // POST
     m_postRenderPass.Create(m_device.Get(), m_windowExtent, m_swapchain.GetImageFormat(), desc);

@@ -16,31 +16,43 @@ void VulkanSceneResources::Create(VkPhysicalDevice physicalDevice, VkDevice devi
 
     // Scene Color
     CreateImage(physicalDevice, device, ssaaExtent.width, ssaaExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,VK_SAMPLE_COUNT_1_BIT,SceneColor.Image, SceneColor.Memory);
+    SceneColor.Format = colorFormat;
     SceneColor.View = CreateImageView(device, SceneColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
     SceneColor.CreateSamplers(device);
 
-    // Final Color
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, FinalColor.Image, FinalColor.Memory);
-    FinalColor.View = CreateImageView(device, FinalColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    FinalColor.CreateSamplers(device);
-
-    // MSAA Color
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, m_samples, MSAAColor.Image, MSAAColor.Memory);
-    MSAAColor.View = CreateImageView(device, MSAAColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-
-    // Resolve Color
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, ResolveColor.Image, ResolveColor.Memory);
-    ResolveColor.View = CreateImageView(device, ResolveColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    ResolveColor.CreateSamplers(device);
-
     // Scene Depth
     CreateImage(physicalDevice, device, ssaaExtent.width, ssaaExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, SceneDepth.Image, SceneDepth.Memory);
+    SceneDepth.Format = depthFormat;
     SceneDepth.View = CreateImageView(device, SceneDepth.Image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     SceneDepth.CreateSamplers(device);
 
+    // MSAA Color
+    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, m_samples, MSAAColor.Image, MSAAColor.Memory);
+    MSAAColor.Format = colorFormat;
+    MSAAColor.View = CreateImageView(device, MSAAColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+
     // MSAA Depth
     CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, m_samples, MSAADepth.Image, MSAADepth.Memory);
+    MSAADepth.Format = depthFormat;
     MSAADepth.View = CreateImageView(device, MSAADepth.Image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+    // MSAA Resolve Color
+    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, ResolveColor.Image, ResolveColor.Memory);
+    ResolveColor.Format = colorFormat;
+    ResolveColor.View = CreateImageView(device, ResolveColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+    ResolveColor.CreateSamplers(device);
+
+    // SSAA Color
+    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, SSAAColor.Image, SSAAColor.Memory);
+    SSAAColor.Format = colorFormat;
+    SSAAColor.View = CreateImageView(device, SSAAColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+    SSAAColor.CreateSamplers(device);
+
+    // SMAA Color
+    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, SMAAColor.Image, SMAAColor.Memory);
+    SMAAColor.Format = colorFormat;
+    SMAAColor.View = CreateImageView(device, SMAAColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+    SMAAColor.CreateSamplers(device);
 
 
 
@@ -101,7 +113,8 @@ void VulkanSceneResources::Destroy(VkDevice device) {
     MSAAColor.Destroy(device);
     MSAADepth.Destroy(device);
     ResolveColor.Destroy(device);
-    FinalColor.Destroy(device);
+    SSAAColor.Destroy(device);
+    SMAAColor.Destroy(device);
 
     std::cout << "[Vulkan] Scene-resources destroyed" << std::endl;
 

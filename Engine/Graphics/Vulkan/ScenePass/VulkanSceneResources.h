@@ -11,12 +11,16 @@ public:
     [[nodiscard]] VkFramebuffer GetFramebuffer() const { return m_framebuffer; }
     [[nodiscard]] VkExtent2D GetExtent() const { return m_framebufferExtent; }
 
-    RenderTarget SceneColor{};      // Normal rendering   --> Surowy obraz gry
-    RenderTarget SceneDepth{};      // Depth attachment   --> Bufor głębokości sceny. Jak daleko od kamery jest piksel. Depth test, ukrywanie obiektów, kolejność geometrii.
-    RenderTarget MSAAColor{};       // Multisampled color --> Multisampled color buffer. Każdy piksel ma kilka próbek koloru.
-    RenderTarget MSAADepth{};       // Multisampled depth --> Depth buffer dla MSAA
-    RenderTarget ResolveColor{};    // Resolved MSAA      --> Finalny obraz po MSAA
-    RenderTarget FinalColor{};      // SSAA Output        --> Finalny obraz po SSAA
+    RenderTarget SceneColor{};      // Normal rendering    --> Surowy obraz gry
+    RenderTarget SceneDepth{};      // Depth attachment    --> Bufor głębokości sceny. Jak daleko od kamery jest piksel. Depth test, ukrywanie obiektów, kolejność geometrii.
+
+    RenderTarget MSAAColor{};       // Multisampled color  --> Multisampled color buffer. Każdy piksel ma kilka próbek koloru.
+    RenderTarget MSAADepth{};       // Multisampled depth  --> Multisampled depth buffer dla MSAA
+    RenderTarget ResolveColor{};    // Resolved MSAA       --> Finalny obraz po MSAA
+
+    RenderTarget SSAAColor{};      // SSAA Output         --> Finalny obraz po SSAA
+
+    RenderTarget SMAAColor{};
 
 private:
 

@@ -3,13 +3,65 @@
 
 #include "Core/ApplicationDesc.h"
 #include "Graphics/Vulkan/Utils/VulkanUtils.h"
+#include "ThirdParty/smaa_textures/AreaTex.h"
+#include "ThirdParty/smaa_textures/SearchTex.h"
 
-void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, RenderTarget& outputColor, ApplicationDesc& desc) {
+void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, RenderTarget& outputColor, ApplicationDesc& desc, VkCommandPool commandPool, VkQueue graphicsQueue) {
 
     m_device = device;
+    m_commandPool = commandPool;
+    m_graphicsQueue = graphicsQueue;
 
-    // OUTPUT
-    m_outputColor = &outputColor;
+    // AREA TEXTURE
+    m_areaTexture.Width = 160;
+    m_areaTexture.Height = 560;
+    m_areaTexture.Format = VK_FORMAT_R8G8_UNORM;
+
+    CreateImage(physicalDevice, device, m_areaTexture.Width, m_areaTexture.Height, m_areaTexture.Format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_SAMPLE_COUNT_1_BIT, m_areaTexture.Image, m_areaTexture.Memory);
+    m_areaTexture.View = CreateImageView(device, m_areaTexture.Image, m_areaTexture.Format, VK_IMAGE_ASPECT_COLOR_BIT);
+    m_areaTexture.CreateSamplers(device);
+
+    // AREA STAGING BUFFER
+    VkBuffer areaStagingBuffer{};
+    VkDeviceMemory areaStagingMemory{};
+    VkDeviceSize areaSize = sizeof(areaTexBytes);
+    CreateBuffer(physicalDevice, device, areaSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, areaStagingBuffer, areaStagingMemory);
+
+    // COPY AREA DATA
+    void* data{};
+    vkMapMemory(device, areaStagingMemory, 0, areaSize, 0, &data);
+    memcpy(data, areaTexBytes, static_cast<size_t>(areaSize));
+    vkUnmapMemory(device, areaStagingMemory);
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_areaTexture.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CopyBufferToImage(device, m_commandPool, m_graphicsQueue, areaStagingBuffer, m_areaTexture.Image, m_areaTexture.Width, m_areaTexture.Height);
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_areaTexture.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    vkDestroyBuffer(device, areaStagingBuffer, nullptr);
+    vkFreeMemory(device, areaStagingMemory, nullptr);
+
+    // SEARCH TEXTURE
+    m_searchTexture.Width = 64;
+    m_searchTexture.Height = 16;
+    m_searchTexture.Format = VK_FORMAT_R8_UNORM;
+
+    CreateImage(physicalDevice, device, m_searchTexture.Width, m_searchTexture.Height, m_searchTexture.Format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_SAMPLE_COUNT_1_BIT, m_searchTexture.Image, m_searchTexture.Memory);
+    m_searchTexture.View = CreateImageView(device, m_searchTexture.Image, m_searchTexture.Format, VK_IMAGE_ASPECT_COLOR_BIT);
+    m_searchTexture.CreateSamplers(device);
+
+    // SEARCH STAGING BUFFER
+    VkBuffer searchStagingBuffer{};
+    VkDeviceMemory searchStagingMemory{};
+    VkDeviceSize searchSize = sizeof(searchTexBytes);
+    CreateBuffer(physicalDevice, device, searchSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, searchStagingBuffer, searchStagingMemory);
+
+    // COPY SEARCH DATA
+    vkMapMemory(device, searchStagingMemory, 0, searchSize, 0, &data);
+    memcpy(data, searchTexBytes, static_cast<size_t>(searchSize));
+    vkUnmapMemory(device, searchStagingMemory);
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_searchTexture.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CopyBufferToImage(device, m_commandPool, m_graphicsQueue, searchStagingBuffer, m_searchTexture.Image, m_searchTexture.Width, m_searchTexture.Height);
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_searchTexture.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    vkDestroyBuffer(device, searchStagingBuffer, nullptr);
+    vkFreeMemory(device, searchStagingMemory, nullptr);
 
     // EDGE TARGET
     m_edgeTarget.Width = extent.width;
@@ -40,8 +92,8 @@ void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice devi
     CreateBlendPipeline(device, extent);
 
     // NEIGHBORHOOD PASS
-    CreateNeighborhoodRenderPass(device);
-    CreateNeighborhoodFramebuffer(device, extent);
+    CreateNeighborhoodRenderPass(device, outputColor);
+    CreateNeighborhoodFramebuffer(device, extent, outputColor);
     CreateNeighborhoodDescriptors(device, desc);
     CreateNeighborhoodPipeline(device, extent);
 
@@ -56,11 +108,11 @@ void VulkanSMAARenderPass::Render(VkCommandBuffer commandBuffer, VkExtent2D exte
     RenderEdgePass(commandBuffer, extent, currentFrame);
 
     // BLEND
-    m_blendDescriptor.UpdateColor(m_device, currentFrame, m_edgeTarget, TextureFilter::Linear);
+    m_blendDescriptor.UpdateSMAABlend(m_device, currentFrame, m_edgeTarget, m_areaTexture, m_searchTexture);
     RenderBlendPass(commandBuffer, extent, currentFrame);
 
     // NEIGHBORHOOD
-    m_neighborhoodDescriptor.UpdateColor(m_device, currentFrame, m_blendTarget, TextureFilter::Linear);
+    m_neighborhoodDescriptor.UpdateSMAANeighborhood(m_device, currentFrame, inputColor, m_blendTarget);
     RenderNeighborhoodPass(commandBuffer, extent, currentFrame);
 
 }
@@ -274,9 +326,23 @@ void VulkanSMAARenderPass::CreateEdgeRenderPass(VkDevice device) {
     VkSubpassDependency dependency{};
     dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     dependency.dstSubpass = 0;
-    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependency.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
     dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    VkSubpassDependency dependency2{};
+    dependency2.srcSubpass = 0;
+    dependency2.dstSubpass = VK_SUBPASS_EXTERNAL;
+    dependency2.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency2.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    dependency2.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    dependency2.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+    VkSubpassDependency dependencies[] = {
+        dependency,
+        dependency2
+    };
 
     // RENDER PASS
     VkRenderPassCreateInfo renderPassInfo{};
@@ -285,8 +351,8 @@ void VulkanSMAARenderPass::CreateEdgeRenderPass(VkDevice device) {
     renderPassInfo.pAttachments = &colorAttachment;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
-    renderPassInfo.dependencyCount = 1;
-    renderPassInfo.pDependencies = &dependency;
+    renderPassInfo.dependencyCount = 2;
+    renderPassInfo.pDependencies = dependencies;
 
     VK_CHECK(vkCreateRenderPass(device, &renderPassInfo, nullptr, &m_edgeRenderPass));
 
@@ -338,11 +404,11 @@ void VulkanSMAARenderPass::CreateEdgePipeline(VkDevice device, VkExtent2D extent
     std::string filename;
 
     filename = "smaa_edge_vert.spv";
-    auto vertCode = ReadFile("../Assets/Shaders/" + filename);
+    auto vertCode = ReadFile("../Assets/Shaders/SMAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
     filename = "smaa_edge_frag.spv";
-    auto fragCode = ReadFile("../Assets/Shaders/" + filename);
+    auto fragCode = ReadFile("../Assets/Shaders/SMAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
     VkShaderModule vertShader = CreateShaderModule(device, vertCode);
@@ -360,6 +426,54 @@ void VulkanSMAARenderPass::CreateEdgePipeline(VkDevice device, VkExtent2D extent
     fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragStage.module = fragShader;
     fragStage.pName = "main";
+
+    struct SMAASpecializationData {
+        float width;
+        float height;
+        float inverseWidth;
+        float inverseHeight;
+    };
+
+    SMAASpecializationData specData{};
+    specData.width = static_cast<float>(extent.width);
+    specData.height = static_cast<float>(extent.height);
+    specData.inverseWidth = 1.0f / specData.width;
+    specData.inverseHeight = 1.0f / specData.height;
+
+    VkSpecializationMapEntry entries[4]{};
+
+    entries[0] = {
+        0,
+        offsetof(SMAASpecializationData, width),
+        sizeof(float)
+    };
+
+    entries[1] = {
+        1,
+        offsetof(SMAASpecializationData, height),
+        sizeof(float)
+    };
+
+    entries[2] = {
+        2,
+        offsetof(SMAASpecializationData, inverseWidth),
+        sizeof(float)
+    };
+
+    entries[3] = {
+        3,
+        offsetof(SMAASpecializationData, inverseHeight),
+        sizeof(float)
+    };
+
+    VkSpecializationInfo specializationInfo{};
+    specializationInfo.mapEntryCount = 4;
+    specializationInfo.pMapEntries = entries;
+    specializationInfo.dataSize = sizeof(specData);
+    specializationInfo.pData = &specData;
+
+    vertStage.pSpecializationInfo = &specializationInfo;
+    fragStage.pSpecializationInfo = &specializationInfo;
 
     VkPipelineShaderStageCreateInfo stages[] = {
         vertStage,
@@ -412,7 +526,7 @@ void VulkanSMAARenderPass::CreateEdgePipeline(VkDevice device, VkExtent2D extent
 
     // COLOR BLENDING
     VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT;
     colorBlendAttachment.blendEnable = VK_FALSE;
 
     VkPipelineColorBlendStateCreateInfo colorBlending{};
@@ -515,6 +629,7 @@ void VulkanSMAARenderPass::CreateBlendFramebuffer(VkDevice device, VkExtent2D ex
     framebufferInfo.layers = 1;
 
     // CREATE
+    std::cout << "BlendTarget View: " << m_blendTarget.View << std::endl;
     VK_CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &m_blendFramebuffer));
 
 }
@@ -522,7 +637,7 @@ void VulkanSMAARenderPass::CreateBlendFramebuffer(VkDevice device, VkExtent2D ex
 void VulkanSMAARenderPass::CreateBlendDescriptors(VkDevice device, ApplicationDesc& desc) {
 
     // EDGE TEXTURE
-    m_blendDescriptor.CreateColor(device, desc.MAX_FRAMES_IN_FLIGHT);
+    m_blendDescriptor.CreateSMAABlend(device, desc.MAX_FRAMES_IN_FLIGHT);
 
     // LAYOUT
     m_blendDescriptorLayout = m_blendDescriptor.GetLayout();
@@ -542,12 +657,12 @@ void VulkanSMAARenderPass::CreateBlendPipeline(VkDevice device, VkExtent2D exten
     // SHADERS
     std::string filename;
 
-    filename = "smaa_blend_vert.spv";
-    auto vertCode = ReadFile("../Assets/Shaders/" + filename);
+    filename = "smaa_weights_vert.spv";
+    auto vertCode = ReadFile("../Assets/Shaders/SMAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
-    filename = "smaa_blend_frag.spv";
-    auto fragCode = ReadFile("../Assets/Shaders/" + filename);
+    filename = "smaa_weights_frag.spv";
+    auto fragCode = ReadFile("../Assets/Shaders/SMAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
     VkShaderModule vertShader = CreateShaderModule(device, vertCode);
@@ -565,6 +680,54 @@ void VulkanSMAARenderPass::CreateBlendPipeline(VkDevice device, VkExtent2D exten
     fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragStage.module = fragShader;
     fragStage.pName = "main";
+
+    struct SMAASpecializationData {
+        float width;
+        float height;
+        float inverseWidth;
+        float inverseHeight;
+    };
+
+    SMAASpecializationData specData{};
+    specData.width = static_cast<float>(extent.width);
+    specData.height = static_cast<float>(extent.height);
+    specData.inverseWidth = 1.0f / specData.width;
+    specData.inverseHeight = 1.0f / specData.height;
+
+    VkSpecializationMapEntry entries[4]{};
+
+    entries[0] = {
+        0,
+        offsetof(SMAASpecializationData, width),
+        sizeof(float)
+    };
+
+    entries[1] = {
+        1,
+        offsetof(SMAASpecializationData, height),
+        sizeof(float)
+    };
+
+    entries[2] = {
+        2,
+        offsetof(SMAASpecializationData, inverseWidth),
+        sizeof(float)
+    };
+
+    entries[3] = {
+        3,
+        offsetof(SMAASpecializationData, inverseHeight),
+        sizeof(float)
+    };
+
+    VkSpecializationInfo specializationInfo{};
+    specializationInfo.mapEntryCount = 4;
+    specializationInfo.pMapEntries = entries;
+    specializationInfo.dataSize = sizeof(specData);
+    specializationInfo.pData = &specData;
+
+    vertStage.pSpecializationInfo = &specializationInfo;
+    fragStage.pSpecializationInfo = &specializationInfo;
 
     VkPipelineShaderStageCreateInfo stages[] = {
         vertStage,
@@ -656,11 +819,11 @@ void VulkanSMAARenderPass::CreateBlendPipeline(VkDevice device, VkExtent2D exten
 
 }
 
-void VulkanSMAARenderPass::CreateNeighborhoodRenderPass(VkDevice device) {
+void VulkanSMAARenderPass::CreateNeighborhoodRenderPass(VkDevice device, RenderTarget& outputColor) {
 
     // COLOR ATTACHMENT
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = m_outputColor->Format;
+    colorAttachment.format = outputColor.Format;
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -702,11 +865,11 @@ void VulkanSMAARenderPass::CreateNeighborhoodRenderPass(VkDevice device) {
 
 }
 
-void VulkanSMAARenderPass::CreateNeighborhoodFramebuffer(VkDevice device, VkExtent2D extent) {
+void VulkanSMAARenderPass::CreateNeighborhoodFramebuffer(VkDevice device, VkExtent2D extent, RenderTarget& outputColor) {
 
     // ATTACHMENTS
     VkImageView attachments[] = {
-        m_outputColor->View
+        outputColor.View
     };
 
     // FRAMEBUFFER INFO
@@ -727,7 +890,7 @@ void VulkanSMAARenderPass::CreateNeighborhoodFramebuffer(VkDevice device, VkExte
 void VulkanSMAARenderPass::CreateNeighborhoodDescriptors(VkDevice device, ApplicationDesc& desc) {
 
     // BLEND TEXTURE
-    m_neighborhoodDescriptor.CreateColor(device, desc.MAX_FRAMES_IN_FLIGHT);
+    m_neighborhoodDescriptor.CreateSMAANeighborhood(device, desc.MAX_FRAMES_IN_FLIGHT);
 
     // LAYOUT
     m_neighborhoodDescriptorLayout = m_neighborhoodDescriptor.GetLayout();
@@ -747,12 +910,12 @@ void VulkanSMAARenderPass::CreateNeighborhoodPipeline(VkDevice device, VkExtent2
     // SHADERS
     std::string filename;
 
-    filename = "smaa_neighborhood_vert.spv";
-    auto vertCode = ReadFile("../Assets/Shaders/" + filename);
+    filename = "smaa_blend_vert.spv";
+    auto vertCode = ReadFile("../Assets/Shaders/SMAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
-    filename = "smaa_neighborhood_frag.spv";
-    auto fragCode = ReadFile("../Assets/Shaders/" + filename);
+    filename = "smaa_blend_frag.spv";
+    auto fragCode = ReadFile("../Assets/Shaders/SMAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
     VkShaderModule vertShader = CreateShaderModule(device, vertCode);
@@ -770,6 +933,54 @@ void VulkanSMAARenderPass::CreateNeighborhoodPipeline(VkDevice device, VkExtent2
     fragStage.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragStage.module = fragShader;
     fragStage.pName = "main";
+
+    struct SMAASpecializationData {
+        float width;
+        float height;
+        float inverseWidth;
+        float inverseHeight;
+    };
+
+    SMAASpecializationData specData{};
+    specData.width = static_cast<float>(extent.width);
+    specData.height = static_cast<float>(extent.height);
+    specData.inverseWidth = 1.0f / specData.width;
+    specData.inverseHeight = 1.0f / specData.height;
+
+    VkSpecializationMapEntry entries[4]{};
+
+    entries[0] = {
+        0,
+        offsetof(SMAASpecializationData, width),
+        sizeof(float)
+    };
+
+    entries[1] = {
+        1,
+        offsetof(SMAASpecializationData, height),
+        sizeof(float)
+    };
+
+    entries[2] = {
+        2,
+        offsetof(SMAASpecializationData, inverseWidth),
+        sizeof(float)
+    };
+
+    entries[3] = {
+        3,
+        offsetof(SMAASpecializationData, inverseHeight),
+        sizeof(float)
+    };
+
+    VkSpecializationInfo specializationInfo{};
+    specializationInfo.mapEntryCount = 4;
+    specializationInfo.pMapEntries = entries;
+    specializationInfo.dataSize = sizeof(specData);
+    specializationInfo.pData = &specData;
+
+    vertStage.pSpecializationInfo = &specializationInfo;
+    fragStage.pSpecializationInfo = &specializationInfo;
 
     VkPipelineShaderStageCreateInfo stages[] = {
         vertStage,

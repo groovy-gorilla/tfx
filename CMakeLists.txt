@@ -77,6 +77,8 @@ add_executable(TFX main.cpp
         ThirdParty/stb/stb_image_write.h
         Engine/pch.h
         Engine/pch.cpp
+        Engine/Graphics/Vulkan/PostProcessPass/VulkanSMAARenderPass.cpp
+        Engine/Graphics/Vulkan/PostProcessPass/VulkanSMAARenderPass.h
 )
 
 

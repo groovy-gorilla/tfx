@@ -131,7 +131,7 @@ void Application::Run() {
             switch (m_desc.AA_MODE) {
                 case AntiAliasing::SSAA:
                 case AntiAliasing::SSAA_SMAA:
-                    postTarget = &m_graphics.GetRenderer().GetSceneResources().FinalColor;
+                    postTarget = &m_graphics.GetRenderer().GetSceneResources().SSAAColor;
                     break;
                 case AntiAliasing::MSAA:
                 case AntiAliasing::MSAA_SMAA:
@@ -211,6 +211,11 @@ void Application::Run() {
                     break;
                 case AntiAliasing::SSAA:
                 case AntiAliasing::SSAA_SMAA:
+                    m_desc.AA_MODE = AntiAliasing::SMAA;
+                    m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
+                    m_desc.SSAA_SCALE = 1.0f;
+                    break;
+                case AntiAliasing::SMAA:
                     m_desc.AA_MODE = AntiAliasing::None;
                     m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
                     m_desc.SSAA_SCALE = 1.0f;
