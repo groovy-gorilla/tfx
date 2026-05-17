@@ -629,7 +629,6 @@ void VulkanSMAARenderPass::CreateBlendFramebuffer(VkDevice device, VkExtent2D ex
     framebufferInfo.layers = 1;
 
     // CREATE
-    std::cout << "BlendTarget View: " << m_blendTarget.View << std::endl;
     VK_CHECK(vkCreateFramebuffer(device, &framebufferInfo, nullptr, &m_blendFramebuffer));
 
 }

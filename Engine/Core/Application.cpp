@@ -106,7 +106,9 @@ void Application::Run() {
         timer += deltaTime;
         frames++;
         if (timer >= 0.5f) {
-            std::cout << "FPS: " << frames * 2 << std::endl;
+            //std::cout << "FPS: " << frames * 2 << std::endl;
+            std::string fps = std::to_string(frames * 2);
+            SDL_SetWindowTitle(m_window.GetHandle(), fps.c_str());
             frames = 0;
             timer = 0.0f;
         }
@@ -123,30 +125,6 @@ void Application::Run() {
             } else {
                 m_desc.FILTER = TextureFilter::Nearest;
             }
-
-            vkDeviceWaitIdle(m_graphics.GetRenderer().GetDevice());
-
-            RenderTarget* postTarget = nullptr;
-
-            switch (m_desc.AA_MODE) {
-                case AntiAliasing::SSAA:
-                case AntiAliasing::SSAA_SMAA:
-                    postTarget = &m_graphics.GetRenderer().GetSceneResources().SSAAColor;
-                    break;
-                case AntiAliasing::MSAA:
-                case AntiAliasing::MSAA_SMAA:
-                    postTarget = &m_graphics.GetRenderer().GetSceneResources().ResolveColor;
-                    break;
-                default:
-                    postTarget = &m_graphics.GetRenderer().GetSceneResources().SceneColor;
-                    break;
-            }
-
-            //m_graphics.GetRenderer().GetPostRenderPass().GetDescriptor().UpdateColor(m_graphics.GetRenderer().GetDevice(), *postTarget, m_desc.FILTER);
-            //m_graphics.GetRenderer().GetSSAARenderPass().GetDescriptor().UpdateColor(m_graphics.GetRenderer().GetDevice(), m_graphics.GetRenderer().GetSceneResources().SceneColor, m_desc.FILTER);
-
-            continue;
-
         }
 
         // VSYNC
@@ -199,26 +177,40 @@ void Application::Run() {
         if (actions.IsActionPressed(m_input, "AA")) {
             switch (m_desc.AA_MODE) {
                 case AntiAliasing::None:
+                    m_desc.AA_MODE = AntiAliasing::SMAA;
+                    m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
+                    m_desc.SSAA_SCALE = 1.0f;
+                    std::cout << "AA_MODE: SMAA" << std::endl;
+                    break;
+                case AntiAliasing::SMAA:
                     m_desc.AA_MODE = AntiAliasing::MSAA;
                     m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_16_BIT;
                     m_desc.SSAA_SCALE = 1.0f;
+                    std::cout << "AA_MODE: MSAA" << std::endl;
                     break;
                 case AntiAliasing::MSAA:
+                    m_desc.AA_MODE = AntiAliasing::MSAA_SMAA;
+                    m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_16_BIT;
+                    m_desc.SSAA_SCALE = 1.0f;
+                    std::cout << "AA_MODE: MSAA_SMAA" << std::endl;
+                    break;
                 case AntiAliasing::MSAA_SMAA:
                     m_desc.AA_MODE = AntiAliasing::SSAA;
                     m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
                     m_desc.SSAA_SCALE = 2.0f;
+                    std::cout << "AA_MODE: SSAA" << std::endl;
                     break;
                 case AntiAliasing::SSAA:
-                case AntiAliasing::SSAA_SMAA:
-                    m_desc.AA_MODE = AntiAliasing::SMAA;
+                    m_desc.AA_MODE = AntiAliasing::SSAA_SMAA;
                     m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
-                    m_desc.SSAA_SCALE = 1.0f;
+                    m_desc.SSAA_SCALE = 2.0f;
+                    std::cout << "AA_MODE: SSAA_SMAA" << std::endl;
                     break;
-                case AntiAliasing::SMAA:
+                case AntiAliasing::SSAA_SMAA:
                     m_desc.AA_MODE = AntiAliasing::None;
                     m_desc.MSAA_SAMPLES = VK_SAMPLE_COUNT_1_BIT;
                     m_desc.SSAA_SCALE = 1.0f;
+                    std::cout << "AA_MODE: NONE" << std::endl;
                     break;
             }
             m_graphics.GetRenderer().RecreateRenderer(m_display, m_window, m_desc);
