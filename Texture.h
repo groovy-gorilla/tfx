@@ -21,9 +21,6 @@ struct TextureCreateInfo {
 class Texture {
 
 public:
-    Texture();
-    ~Texture();
-
     void Initialize(VkDevice& device, VkPhysicalDevice& physicalDevice, VkCommandPool& commandPool, VkQueue& graphicsQueue, const std::string& filename, TextureType type);
     void Shutdown(VkDevice& device);
 
@@ -31,12 +28,12 @@ public:
     VkSampler& GetSampler();
 
 private:
-    VkImage m_image;
-    VkDeviceMemory m_memory;
-    VkImageView m_imageView;
-    VkSampler m_sampler;
-    VkFormat m_format;
-    uint32_t m_mipLevels;
+    VkImage m_image = VK_NULL_HANDLE;
+    VkDeviceMemory m_memory = VK_NULL_HANDLE;
+    VkImageView m_imageView = VK_NULL_HANDLE;
+    VkSampler m_sampler = VK_NULL_HANDLE;
+    VkFormat m_format = VK_FORMAT_UNDEFINED;
+    uint32_t m_mipLevels = 1;
     std::string m_filename;
     TextureCreateInfo m_createInfo{};
 

@@ -83,9 +83,9 @@ private:
     VkDevice m_device = VK_NULL_HANDLE;
 
     // INTERMEDIATE TARGETS
-public:    RenderTarget m_edgeTarget{};
-    RenderTarget m_blendTarget{};
-private:
+    RenderTarget m_edgeColor{};
+    RenderTarget m_blendColor{};
+
     // SMAA LOOKUP TEXTURES
     RenderTarget m_areaTexture{};
     RenderTarget m_searchTexture{};

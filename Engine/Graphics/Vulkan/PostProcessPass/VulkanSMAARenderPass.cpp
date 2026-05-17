@@ -5,6 +5,7 @@
 #include "Graphics/Vulkan/Utils/VulkanUtils.h"
 #include "ThirdParty/smaa_textures/AreaTex.h"
 #include "ThirdParty/smaa_textures/SearchTex.h"
+#include "Debug/ErrorDialog.h"
 
 void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, RenderTarget& outputColor, ApplicationDesc& desc, VkCommandPool commandPool, VkQueue graphicsQueue) {
 
@@ -13,13 +14,7 @@ void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice devi
     m_graphicsQueue = graphicsQueue;
 
     // AREA TEXTURE
-    m_areaTexture.Width = 160;
-    m_areaTexture.Height = 560;
-    m_areaTexture.Format = VK_FORMAT_R8G8_UNORM;
-
-    CreateImage(physicalDevice, device, m_areaTexture.Width, m_areaTexture.Height, m_areaTexture.Format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_SAMPLE_COUNT_1_BIT, m_areaTexture.Image, m_areaTexture.Memory);
-    m_areaTexture.View = CreateImageView(device, m_areaTexture.Image, m_areaTexture.Format, VK_IMAGE_ASPECT_COLOR_BIT);
-    m_areaTexture.CreateSamplers(device);
+    m_areaTexture.Create(device, physicalDevice, 160, 560, VK_FORMAT_R8G8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // AREA STAGING BUFFER
     VkBuffer areaStagingBuffer{};
@@ -32,20 +27,14 @@ void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice devi
     vkMapMemory(device, areaStagingMemory, 0, areaSize, 0, &data);
     memcpy(data, areaTexBytes, static_cast<size_t>(areaSize));
     vkUnmapMemory(device, areaStagingMemory);
-    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_areaTexture.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    CopyBufferToImage(device, m_commandPool, m_graphicsQueue, areaStagingBuffer, m_areaTexture.Image, m_areaTexture.Width, m_areaTexture.Height);
-    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_areaTexture.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_areaTexture.GetImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CopyBufferToImage(device, m_commandPool, m_graphicsQueue, areaStagingBuffer, m_areaTexture.GetImage(), m_areaTexture.GetWidth(), m_areaTexture.GetHeight());
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_areaTexture.GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     vkDestroyBuffer(device, areaStagingBuffer, nullptr);
     vkFreeMemory(device, areaStagingMemory, nullptr);
 
     // SEARCH TEXTURE
-    m_searchTexture.Width = 64;
-    m_searchTexture.Height = 16;
-    m_searchTexture.Format = VK_FORMAT_R8_UNORM;
-
-    CreateImage(physicalDevice, device, m_searchTexture.Width, m_searchTexture.Height, m_searchTexture.Format, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_SAMPLE_COUNT_1_BIT, m_searchTexture.Image, m_searchTexture.Memory);
-    m_searchTexture.View = CreateImageView(device, m_searchTexture.Image, m_searchTexture.Format, VK_IMAGE_ASPECT_COLOR_BIT);
-    m_searchTexture.CreateSamplers(device);
+    m_searchTexture.Create(device, physicalDevice, 64, 16, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // SEARCH STAGING BUFFER
     VkBuffer searchStagingBuffer{};
@@ -57,27 +46,17 @@ void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice devi
     vkMapMemory(device, searchStagingMemory, 0, searchSize, 0, &data);
     memcpy(data, searchTexBytes, static_cast<size_t>(searchSize));
     vkUnmapMemory(device, searchStagingMemory);
-    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_searchTexture.Image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-    CopyBufferToImage(device, m_commandPool, m_graphicsQueue, searchStagingBuffer, m_searchTexture.Image, m_searchTexture.Width, m_searchTexture.Height);
-    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_searchTexture.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_searchTexture.GetImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    CopyBufferToImage(device, m_commandPool, m_graphicsQueue, searchStagingBuffer, m_searchTexture.GetImage(), m_searchTexture.GetWidth(), m_searchTexture.GetHeight());
+    TransitionImageLayout(device, m_commandPool, m_graphicsQueue, m_searchTexture.GetImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     vkDestroyBuffer(device, searchStagingBuffer, nullptr);
     vkFreeMemory(device, searchStagingMemory, nullptr);
 
     // EDGE TARGET
-    m_edgeTarget.Width = extent.width;
-    m_edgeTarget.Height = extent.height;
-    m_edgeTarget.Format = VK_FORMAT_R8G8_UNORM;
-    CreateImage(physicalDevice, device, extent.width, extent.height, m_edgeTarget.Format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, m_edgeTarget.Image, m_edgeTarget.Memory);
-    m_edgeTarget.View = CreateImageView(device, m_edgeTarget.Image, m_edgeTarget.Format, VK_IMAGE_ASPECT_COLOR_BIT);
-    m_edgeTarget.CreateSamplers(device);
+    m_edgeColor.Create(device, physicalDevice, extent.width, extent.height, VK_FORMAT_R8G8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // BLEND TARGET
-    m_blendTarget.Width = extent.width;
-    m_blendTarget.Height = extent.height;
-    m_blendTarget.Format = VK_FORMAT_R8G8B8A8_UNORM;
-    CreateImage(physicalDevice, device, extent.width, extent.height, m_blendTarget.Format, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, m_blendTarget.Image, m_blendTarget.Memory);
-    m_blendTarget.View = CreateImageView(device, m_blendTarget.Image, m_blendTarget.Format, VK_IMAGE_ASPECT_COLOR_BIT);
-    m_blendTarget.CreateSamplers(device);
+    m_blendColor.Create(device, physicalDevice, extent.width, extent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // EDGE PASS
     CreateEdgeRenderPass(device);
@@ -108,11 +87,11 @@ void VulkanSMAARenderPass::Render(VkCommandBuffer commandBuffer, VkExtent2D exte
     RenderEdgePass(commandBuffer, extent, currentFrame);
 
     // BLEND
-    m_blendDescriptor.UpdateSMAABlend(m_device, currentFrame, m_edgeTarget, m_areaTexture, m_searchTexture);
+    m_blendDescriptor.UpdateSMAABlend(m_device, currentFrame, m_edgeColor, m_areaTexture, m_searchTexture);
     RenderBlendPass(commandBuffer, extent, currentFrame);
 
     // NEIGHBORHOOD
-    m_neighborhoodDescriptor.UpdateSMAANeighborhood(m_device, currentFrame, inputColor, m_blendTarget);
+    m_neighborhoodDescriptor.UpdateSMAANeighborhood(m_device, currentFrame, inputColor, m_blendColor);
     RenderNeighborhoodPass(commandBuffer, extent, currentFrame);
 
 }
@@ -188,8 +167,8 @@ void VulkanSMAARenderPass::Destroy(VkDevice device) {
     }
 
     // TARGETS
-    m_edgeTarget.Destroy(device);
-    m_blendTarget.Destroy(device);
+    m_edgeColor.Destroy(device);
+    m_blendColor.Destroy(device);
 
     // LOOKUP TEXTURES
     m_areaTexture.Destroy(device);
@@ -302,7 +281,7 @@ void VulkanSMAARenderPass::CreateEdgeRenderPass(VkDevice device) {
 
     // COLOR ATTACHMENT
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = m_edgeTarget.Format;
+    colorAttachment.format = m_edgeColor.GetFormat();
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -362,7 +341,7 @@ void VulkanSMAARenderPass::CreateEdgeFramebuffer(VkDevice device, VkExtent2D ext
 
     // ATTACHMENTS
     VkImageView attachments[] = {
-        m_edgeTarget.View
+        m_edgeColor.GetImageView()
     };
 
     // FRAMEBUFFER INFO
@@ -569,7 +548,7 @@ void VulkanSMAARenderPass::CreateBlendRenderPass(VkDevice device) {
 
     // COLOR ATTACHMENT
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = m_blendTarget.Format;
+    colorAttachment.format = m_blendColor.GetFormat();
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -615,7 +594,7 @@ void VulkanSMAARenderPass::CreateBlendFramebuffer(VkDevice device, VkExtent2D ex
 
     // ATTACHMENTS
     VkImageView attachments[] = {
-        m_blendTarget.View
+        m_blendColor.GetImageView()
     };
 
     // FRAMEBUFFER INFO
@@ -822,7 +801,7 @@ void VulkanSMAARenderPass::CreateNeighborhoodRenderPass(VkDevice device, RenderT
 
     // COLOR ATTACHMENT
     VkAttachmentDescription colorAttachment{};
-    colorAttachment.format = outputColor.Format;
+    colorAttachment.format = outputColor.GetFormat();
     colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
     colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -868,7 +847,7 @@ void VulkanSMAARenderPass::CreateNeighborhoodFramebuffer(VkDevice device, VkExte
 
     // ATTACHMENTS
     VkImageView attachments[] = {
-        outputColor.View
+        outputColor.GetImageView()
     };
 
     // FRAMEBUFFER INFO

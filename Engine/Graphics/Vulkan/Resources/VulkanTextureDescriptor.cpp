@@ -250,8 +250,8 @@ void VulkanTextureDescriptor::UpdateColor(VkDevice device, uint32_t frameIndex, 
 
     VkDescriptorImageInfo colorInfo{};
     colorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    colorInfo.imageView = color.View;
-    colorInfo.sampler = (filter == TextureFilter::Nearest) ? color.NearestSampler : color.LinearSampler;
+    colorInfo.imageView = color.GetImageView();
+    colorInfo.sampler = (filter == TextureFilter::Nearest) ? color.GetNearestSampler() : color.GetLinearSampler();
 
     VkWriteDescriptorSet colorWrite{};
     colorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -270,8 +270,8 @@ void VulkanTextureDescriptor::UpdateDepth(VkDevice device, uint32_t frameIndex, 
 
     VkDescriptorImageInfo depthInfo{};
     depthInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
-    depthInfo.imageView = depth.View;
-    depthInfo.sampler = (filter == TextureFilter::Nearest) ? depth.NearestSampler : depth.LinearSampler;
+    depthInfo.imageView = depth.GetImageView();
+    depthInfo.sampler = (filter == TextureFilter::Nearest) ? depth.GetNearestSampler() : depth.GetLinearSampler();
 
     VkWriteDescriptorSet depthWrite{};
     depthWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -290,18 +290,18 @@ void VulkanTextureDescriptor::UpdateSMAABlend(VkDevice device, uint32_t frameInd
 
     VkDescriptorImageInfo edgeInfo{};
     edgeInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    edgeInfo.imageView = edge.View;
-    edgeInfo.sampler = edge.LinearSampler;
+    edgeInfo.imageView = edge.GetImageView();
+    edgeInfo.sampler = edge.GetLinearSampler();
 
     VkDescriptorImageInfo areaInfo{};
     areaInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    areaInfo.imageView = area.View;
-    areaInfo.sampler = area.LinearSampler;
+    areaInfo.imageView = area.GetImageView();
+    areaInfo.sampler = area.GetLinearSampler();
 
     VkDescriptorImageInfo searchInfo{};
     searchInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    searchInfo.imageView = search.View;
-    searchInfo.sampler = search.NearestSampler;
+    searchInfo.imageView = search.GetImageView();
+    searchInfo.sampler = search.GetNearestSampler();
 
     VkWriteDescriptorSet writes[3]{};
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -333,13 +333,13 @@ void VulkanTextureDescriptor::UpdateSMAANeighborhood(VkDevice device, uint32_t c
 
     VkDescriptorImageInfo inputInfo{};
     inputInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    inputInfo.imageView = inputColor.View;
-    inputInfo.sampler = inputColor.LinearSampler;
+    inputInfo.imageView = inputColor.GetImageView();
+    inputInfo.sampler = inputColor.GetLinearSampler();
 
     VkDescriptorImageInfo blendInfo{};
     blendInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    blendInfo.imageView = blendWeights.View;
-    blendInfo.sampler = blendWeights.LinearSampler;
+    blendInfo.imageView = blendWeights.GetImageView();
+    blendInfo.sampler = blendWeights.GetLinearSampler();
 
     VkWriteDescriptorSet writes[2]{};
     writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -359,3 +359,5 @@ void VulkanTextureDescriptor::UpdateSMAANeighborhood(VkDevice device, uint32_t c
     vkUpdateDescriptorSets(device, 2, writes,0, nullptr);
 
 }
+
+

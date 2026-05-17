@@ -79,6 +79,7 @@ add_executable(TFX main.cpp
         Engine/pch.cpp
         Engine/Graphics/Vulkan/PostProcessPass/VulkanSMAARenderPass.cpp
         Engine/Graphics/Vulkan/PostProcessPass/VulkanSMAARenderPass.h
+        Engine/Graphics/Vulkan/Resources/RenderTarget.cpp
 )
 
 

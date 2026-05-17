@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "VulkanSceneResources.h"
-#include "Graphics/Vulkan/Utils/VulkanUtils.h"
+#include "Debug/ErrorDialog.h"
 
 
 void VulkanSceneResources::Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, VkFormat colorFormat, VkFormat depthFormat, ApplicationDesc& desc, VkRenderPass renderPass) {
@@ -15,44 +15,25 @@ void VulkanSceneResources::Create(VkPhysicalDevice physicalDevice, VkDevice devi
 
 
     // Scene Color
-    CreateImage(physicalDevice, device, ssaaExtent.width, ssaaExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,VK_SAMPLE_COUNT_1_BIT,SceneColor.Image, SceneColor.Memory);
-    SceneColor.Format = colorFormat;
-    SceneColor.View = CreateImageView(device, SceneColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    SceneColor.CreateSamplers(device);
+    SceneColor.Create(device, physicalDevice, ssaaExtent.width, ssaaExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // Scene Depth
-    CreateImage(physicalDevice, device, ssaaExtent.width, ssaaExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, SceneDepth.Image, SceneDepth.Memory);
-    SceneDepth.Format = depthFormat;
-    SceneDepth.View = CreateImageView(device, SceneDepth.Image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
-    SceneDepth.CreateSamplers(device);
+    SceneDepth.Create(device, physicalDevice, ssaaExtent.width, ssaaExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // MSAA Color
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, m_samples, MSAAColor.Image, MSAAColor.Memory);
-    MSAAColor.Format = colorFormat;
-    MSAAColor.View = CreateImageView(device, MSAAColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
+    MSAAColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, m_samples);
 
     // MSAA Depth
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, m_samples, MSAADepth.Image, MSAADepth.Memory);
-    MSAADepth.Format = depthFormat;
-    MSAADepth.View = CreateImageView(device, MSAADepth.Image, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    MSAADepth.Create(device, physicalDevice, internalExtent.width, internalExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, m_samples);
 
     // MSAA Resolve Color
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, ResolveColor.Image, ResolveColor.Memory);
-    ResolveColor.Format = colorFormat;
-    ResolveColor.View = CreateImageView(device, ResolveColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    ResolveColor.CreateSamplers(device);
+    ResolveColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // SSAA Color
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, SSAAColor.Image, SSAAColor.Memory);
-    SSAAColor.Format = colorFormat;
-    SSAAColor.View = CreateImageView(device, SSAAColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    SSAAColor.CreateSamplers(device);
+    SSAAColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // SMAA Color
-    CreateImage(physicalDevice, device, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_SAMPLE_COUNT_1_BIT, SMAAColor.Image, SMAAColor.Memory);
-    SMAAColor.Format = colorFormat;
-    SMAAColor.View = CreateImageView(device, SMAAColor.Image, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT);
-    SMAAColor.CreateSamplers(device);
+    SMAAColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
 
 
@@ -64,16 +45,16 @@ void VulkanSceneResources::Create(VkPhysicalDevice physicalDevice, VkDevice devi
         case AntiAliasing::MSAA:
         case AntiAliasing::MSAA_SMAA:
              attachments = {
-                MSAAColor.View,
-                MSAADepth.View,
-                ResolveColor.View,
+                MSAAColor.GetImageView(),
+                MSAADepth.GetImageView(),
+                ResolveColor.GetImageView(),
              };
              break;
 
         default:
              attachments = {
-                SceneColor.View,
-                SceneDepth.View
+                SceneColor.GetImageView(),
+                SceneDepth.GetImageView()
              };
 
     }

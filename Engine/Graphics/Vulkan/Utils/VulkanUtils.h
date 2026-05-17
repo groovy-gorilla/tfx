@@ -11,7 +11,7 @@ uint32_t FindMemoryType(
 VkFormat FindDepthFormat(
     VkPhysicalDevice physicalDevice);
 
-void CreateImage(
+void CreateImageResource(
     VkPhysicalDevice physicalDevice,
     VkDevice device,
     uint32_t width,
@@ -22,13 +22,14 @@ void CreateImage(
     VkImage& image,
     VkDeviceMemory& memory);
 
-VkImageView CreateImageView(
+void CreateImageViewResource(
     VkDevice device,
     VkImage image,
     VkFormat format,
-    VkImageAspectFlags aspect);
+    VkImageAspectFlags aspect,
+    VkImageView& imageView);
 
-VkSampler CreateSampler(
+VkSampler CreateSamplerResource(
     VkDevice& device);
 
 VkShaderModule CreateShaderModule(

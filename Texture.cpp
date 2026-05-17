@@ -6,19 +6,6 @@
 #include <stdexcept>
 #include <vector>
 
-Texture::Texture() {
-
-    m_image = VK_NULL_HANDLE;
-    m_memory = VK_NULL_HANDLE;
-    m_imageView = VK_NULL_HANDLE;
-    m_sampler = VK_NULL_HANDLE;
-    m_format = VK_FORMAT_UNDEFINED;
-    m_mipLevels = 1;
-
-}
-
-Texture::~Texture() = default;
-
 void Texture::Initialize(VkDevice& device, VkPhysicalDevice& physicalDevice, VkCommandPool& commandPool, VkQueue& graphicsQueue, const std::string& filename, TextureType type) {
 
     VkBuffer stagingBuffer;

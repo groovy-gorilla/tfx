@@ -69,7 +69,7 @@ VkFormat FindDepthFormat(VkPhysicalDevice physicalDevice)
 
 }
 
-void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImage& image, VkDeviceMemory& memory) {
+void CreateImageResource(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t width, uint32_t height, VkFormat format, VkImageUsageFlags usage, VkSampleCountFlagBits samples, VkImage& image, VkDeviceMemory& memory) {
 
     VkImageCreateInfo img{};
     img.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -99,7 +99,7 @@ void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t widt
 
 }
 
-VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspect) {
+void CreateImageViewResource(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspect, VkImageView& imageView) {
 
     VkImageViewCreateInfo view{};
     view.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -110,14 +110,12 @@ VkImageView CreateImageView(VkDevice device, VkImage image, VkFormat format, VkI
     view.subresourceRange.levelCount = 1;
     view.subresourceRange.layerCount = 1;
 
-    VkImageView imageView;
     VK_CHECK(vkCreateImageView(device, &view, nullptr, &imageView));
 
-    return imageView;
 
 }
 
-VkSampler CreateSampler(VkDevice& device) {
+VkSampler CreateSamplerResource(VkDevice& device) {
 
     VkSamplerCreateInfo samplerInfo{};
     samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

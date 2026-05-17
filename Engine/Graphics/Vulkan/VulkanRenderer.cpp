@@ -3,6 +3,7 @@
 #include "ThirdParty/stb/stb_image_write.h"
 #include "VulkanRenderer.h"
 #include "Utils/VulkanUtils.h"
+#include "Debug/ErrorDialog.h"
 
 
 void VulkanRenderer::Initialize(Display& display, Window& window, ApplicationDesc& desc) {

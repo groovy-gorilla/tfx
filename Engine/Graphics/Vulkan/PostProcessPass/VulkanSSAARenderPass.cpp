@@ -3,6 +3,7 @@
 #include "Graphics/Vulkan/Utils/VulkanUtils.h"
 #include "Graphics/Vulkan/Resources/RenderTarget.h"
 #include "Core/ApplicationDesc.h"
+#include "Debug/ErrorDialog.h"
 
 
 void VulkanSSAARenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat swapchainFormat, /*IN*/RenderTarget& sceneColor, RenderTarget& sceneDepth, RenderTarget& finalColor, ApplicationDesc& desc) {
@@ -225,7 +226,7 @@ void VulkanSSAARenderPass::Destroy(VkDevice device) {
 void VulkanSSAARenderPass::CreateFramebuffer(VkDevice device, VkExtent2D extent, RenderTarget& finalColor) {
 
     VkImageView attachments[] = {
-        finalColor.View
+        finalColor.GetImageView()
     };
 
     VkFramebufferCreateInfo fb{};
