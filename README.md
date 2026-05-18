@@ -4,12 +4,30 @@ Modern remake of a 1993 flight simulator written in C++ and Vulkan.
 
 ## Overview
 
-TFX is a custom flight simulator project built from scratch using:
-- C++20
-- Vulkan
-- SDL3
+A modern remake/reimagination of the legendary 1993 combat flight simulator created by Digital Image Design.
 
-The project focuses on modern rendering architecture, clean code structure, and low-level graphics programming.
+This project aims to recreate the atmosphere, scale and futuristic military aesthetic of the original TFX while rebuilding the technology completely from scratch using modern Vulkan rendering.
+
+Originally released in 1993, TFX pushed PC hardware to its limits and became famous for its massive battlefields, advanced flight simulation, dynamic weather systems, virtual cockpit and groundbreaking polygonal 3D graphics. TFX featured cutting-edge 3D graphics for 1993 and was considered one of the most technologically ambitious combat flight simulators ever created.
+
+The original game featured:
+- large-scale military operations across multiple global conflict zones
+- futuristic prototype aircraft including the Eurofighter EF2000, F-22 and F-117
+- dynamic lighting and weather effects
+- detailed cockpit systems
+- advanced flight physics and simulation mechanics
+- a distinctive early-90s military flight simulator atmosphere
+
+This remake focuses not only on modern graphics technology, but also on preserving the feeling and identity of the original game:
+- the lonely atmosphere of long-range combat flights
+- the cold futuristic military aesthetic
+- the iconic early-90s polygonal visual style
+- massive landscapes and large viewing distances
+- the sensation of speed and scale that made TFX unique
+
+The renderer is being developed entirely in C++ and Vulkan, with a strong focus on modern rendering techniques while preserving the visual identity and atmosphere of the 1993 original.
+
+Inspired by the legendary work of Digital Image Design and the golden era of 90s combat flight simulators.
 
 ---
 
