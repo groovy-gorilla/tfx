@@ -16,68 +16,26 @@ The project focuses on modern rendering architecture, clean code structure, and 
 ## Features
 
 - Vulkan renderer
-- SDL3 platform layer
-- Multi-pass rendering
-- Post-processing pipeline
-- Custom rendering architecture
-
----
-
-## Project Structure
-
-```text
-TFX/
-│
-├── Engine/
-│   │
-│   ├── Core/
-│   │   │
-│   │   ├── Application/
-│   │   ├── Window/
-│   │   └── Display/
-│   │
-│   ├── Input/
-│   │
-│   ├── Platform/
-│   │   │
-│   │   └── SDL/
-│   │
-│   ├── Debug/
-│   │
-│   ├── Graphics/
-│   │   │
-│   │   ├── Renderer
-│   │   │
-│   │   ├── Passes
-│   │   │   │
-│   │   │   ├── Scene
-│   │   │   └── PostProcess
-│   │   │
-│   │   ├── Resources
-│   │   │
-│   │   └── Vulkan
-│   │       │
-│   │       ├── Core
-│   │       ├── Command
-│   │       ├── Swapchain
-│   │       ├── Sync
-│   │       ├── Debug
-│   │       └── Resources
-│   │
-│   └── pch.h
-│
-├── Sandbox/
-│
-├── Game/
-│
-├── Assets/
-│   │
-│   └── Shaders/
-│
-├── ThirdParty/
-│
-└── CMake/
-```
+- HDR Rendering pipeline
+- Dynamic resolution switching
+- Dynamic fullscreen/windowed switching
+- Toggleable VSync
+- Screenshot support
+- Runtime HDR toggle
+- Runtime AA switching
+- SMAA
+- MSAA
+- SSAA
+- Combined AA modes
+- Tonemapping
+- Dithering (ING)
+- Fullscreen triangle rendering
+- Push constants
+- Dynamic viewport/scissor
+- Swapchain recreation
+- Aspect ratio preservation
+- SRGB workflow
+- HDR intermediate render targets
 
 ---
 
