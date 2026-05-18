@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Core/Timer.h"
 #include "Core/VulkanInstance.h"
 #include "Core/VulkanDebug.h"
 #include "Core/VulkanSurface.h"
@@ -28,16 +29,16 @@ struct ViewportRect {
 class VulkanRenderer {
 public:
     void Initialize(Display& display, Window& window, ApplicationDesc& desc);
-    void Shutdown(ApplicationDesc& desc);
+    void Shutdown();
 
     void RecordCommandBuffer(VkDevice device, uint32_t imageIndex, ApplicationDesc& desc);
 
+    void Update(float deltaTime, bool hdrEnable);
     void Render(VkDevice device, ApplicationDesc& desc);
 
     void RecreateSwapchain(Display& display, Window& window, ApplicationDesc& desc);
     void RecreateRenderer(Display& display, Window& window, ApplicationDesc& desc);
 
-    void UpdateExposure(float deltaTime);
     void SetTargetExposure(float exposure);
 
     void TakeScreenshot(uint32_t imageIndex);
@@ -79,10 +80,11 @@ private:
     VkExtent2D m_windowExtent = {};
 
     // HDR
-    VkFormat m_HDRFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+    VkFormat m_hdrFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
     float m_exposure = 1.0f;
     float m_targetExposure = 1.0f;
 
+    void UpdateExposure(float deltaTime, bool hdrEnable);
 
 
 };

@@ -46,7 +46,7 @@ void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
     VkPushConstantRange push{};
     push.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     push.offset = 0;
-    push.size = sizeof(float);
+    push.size = sizeof(PostPushConstants);
 
     // PIPELINE LAYOUT
     VkPipelineLayoutCreateInfo layoutInfo{};
@@ -175,6 +175,7 @@ void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
     pipelineInfo.subpass = 0;
     pipelineInfo.pDynamicState = &dynamicState;
 
+    pipelineInfo.pStages = stages;
     VK_CHECK(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline));
 
     vkDestroyShaderModule(device, vertShader, nullptr);
@@ -185,8 +186,6 @@ void VulkanPostRenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
 }
 
 void VulkanPostRenderPass::Render(VkDevice device, uint32_t frameIndex, VkCommandBuffer commandBuffer, RenderTarget& inputColor, VkFramebuffer framebuffer, VkExtent2D extent, ApplicationDesc& desc, float exposure) {
-
-    vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &exposure);
 
     m_sceneDescriptor.UpdateColor(device, frameIndex, inputColor, desc.FILTER);
 
@@ -202,8 +201,6 @@ void VulkanPostRenderPass::Render(VkDevice device, uint32_t frameIndex, VkComman
     beginInfo.pClearValues = &clear;
 
     vkCmdBeginRenderPass(commandBuffer, &beginInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 
     VkViewport viewport{};
     viewport.minDepth = 0.0f;
@@ -254,6 +251,15 @@ void VulkanPostRenderPass::Render(VkDevice device, uint32_t frameIndex, VkComman
 
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+    PostPushConstants PC;
+    PC.hdrEnable = desc.HDR;
+    PC.exposure = exposure;
+    PC.dithering = desc.DITHERING;
+
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+    vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(PostPushConstants), &PC);
+
 
     VkDescriptorSet descriptorSet = m_sceneDescriptor.GetSet(frameIndex);
 

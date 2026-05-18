@@ -5,12 +5,15 @@ void Graphics::Initialize(Display& display, Window& window, ApplicationDesc& des
     m_renderer.Initialize(display, window, desc);
 }
 
-void Graphics::Shutdown(ApplicationDesc& desc) {
-    m_renderer.Shutdown(desc);
+void Graphics::Shutdown() {
+    m_renderer.Shutdown();
 }
 
-void Graphics::Render(VkDevice device, ApplicationDesc& desc) {
+void Graphics::Render(VkDevice device, ApplicationDesc& desc, float deltaTime) {
+
+    m_renderer.Update(deltaTime, desc.HDR);
     m_renderer.Render(device, desc);
+
 }
 
 VulkanRenderer& Graphics::GetRenderer() {

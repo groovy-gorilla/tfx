@@ -44,31 +44,23 @@ void VulkanSSAARenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
     m_sceneDescriptor.Create(device, desc.MAX_FRAMES_IN_FLIGHT, sceneColor, sceneDepth, TextureFilter::Linear);
     m_descriptorSetLayout = m_sceneDescriptor.GetLayout();
 
-    // PUSH CONSTANT
-    VkPushConstantRange push{};
-    push.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    push.offset = 0;
-    push.size = sizeof(float);
-
     // PIPELINE LAYOUT
     VkPipelineLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     layoutInfo.setLayoutCount = 1;
     layoutInfo.pSetLayouts = &m_descriptorSetLayout;
-    layoutInfo.pushConstantRangeCount = 1;
-    layoutInfo.pPushConstantRanges = &push;
 
     vkCreatePipelineLayout(device, &layoutInfo, nullptr, &m_pipelineLayout);
 
     // SHADERS
     std::string filename;
 
-    filename = "post_vert.spv";
-    auto vertCode = ReadFile("../Assets/Shaders/" + filename);
+    filename = "ssaa_vert.spv";
+    auto vertCode = ReadFile("../Assets/Shaders/SSAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
-    filename = "post_frag.spv";
-    auto fragCode = ReadFile("../Assets/Shaders/" + filename);
+    filename = "ssaa_frag.spv";
+    auto fragCode = ReadFile("../Assets/Shaders/SSAA/" + filename);
     std::cout << "[Shader] Loading: " << filename << std::endl;
 
     VkShaderModule vertShader = CreateShaderModule(device, vertCode);
@@ -177,9 +169,7 @@ void VulkanSSAARenderPass::Create(VkDevice device, VkExtent2D extent, VkFormat s
 
 }
 
-void VulkanSSAARenderPass::Render(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame, float exposure) {
-
-    vkCmdPushConstants(commandBuffer, m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(float), &exposure);
+void VulkanSSAARenderPass::Render(VkCommandBuffer commandBuffer, VkExtent2D extent, uint32_t currentFrame) {
 
     VkClearValue clear{};
     clear.color = { 0.0f, 0.0f, 0.0f, 1.0f };

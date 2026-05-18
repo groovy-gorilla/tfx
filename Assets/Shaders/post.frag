@@ -11,45 +11,43 @@ layout(location = 0) in vec2 inUV;
 layout(location = 0) out vec4 outColor;
 
 layout(push_constant) uniform PushConstants {
+    int hdrEnable;
     float exposure;
+    int dithering;
 } pc;
+
+// Dithering - Interleaved Gradient Noise
+float IGN(vec2 pixel) {
+    return fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
+}
 
 void main() {
 
+    vec3 color = texture(sceneTexture, inUV).rgb;
+
     // HDR
-    vec3 hdr = texture(sceneTexture, inUV).rgb;
+    if (pc.hdrEnable != 0) {
 
-    hdr *= pc.exposure;
+        // EXPOSURE
+        color *= pc.exposure;
 
-    vec3 mapped = hdr / (1.0 + hdr);
+        // TONEMAPPING HDR --> SDR
+        color = color / (1.0 + color);
 
-    //mapped = pow(mapped, vec3(1.0 / 2.2));
+    } else {
 
-    outColor = vec4(mapped, 1.0);
+        // HDR VALUES NORMALIZATION
+        float maxValue = max(color.r, max(color.g, color.b));
+        if (maxValue > 1.0) color /= maxValue;
+
+    }
+
+    // DITHERING
+    if (pc.dithering != 0) {
+        float noise = IGN(gl_FragCoord.xy);
+        color += (noise - 0.5) / 512.0;
+    }
+
+    outColor = vec4(color, 1.0);
 
 }
-
-// Z poniższej funkcji wyiera format dla swapchain.
-// Jeśli jest SRGB to nie włączaj pow()
-// Jeśli jest UNORM to włącz.
-/*
-VkSurfaceFormatKHR VulkanSwapchain::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats) {
-
-// 1. Najlepszy wybór (sRGB)
-for (const auto& f : formats) {
-if (f.format == VK_FORMAT_B8G8R8A8_SRGB && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-return f;
-}
-}
-
-// 2. Drugi wybór (UNORM + sRGB colorspace)
-for (const auto& f : formats) {
-if (f.format == VK_FORMAT_B8G8R8A8_UNORM && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-return f;
-}
-}
-
-// 3. Ostateczność
-return formats[0];
-
-}*/

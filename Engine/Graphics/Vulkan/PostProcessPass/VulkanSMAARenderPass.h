@@ -14,6 +14,7 @@ public:
                 VkDevice device,
                 VkExtent2D extent,
                 RenderTarget& outputColor,
+                VkFormat blendFormat,
                 ApplicationDesc& desc,
                 VkCommandPool commandPool,
                 VkQueue graphicsQueue);

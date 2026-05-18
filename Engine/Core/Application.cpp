@@ -26,17 +26,20 @@ void Application::Run() {
     actions.Bind("VSync", Key::V);
     actions.Bind("Screenshot", Key::S);
     actions.Bind("Exposure", Key::E);
+    actions.Bind("HDR", Key::H);
+    actions.Bind("Dithering", Key::D);
     actions.Bind("ResolutionUp", Key::Equals);
     actions.Bind("ResolutionDown", Key::Minus);
 
     // VULKAN
     m_graphics.Initialize(m_display, m_window, m_desc);
 
-    auto lastTime = std::chrono::high_resolution_clock::now();
     float timer = 0.0f;
     uint32_t frames = 0;
 
     while (!m_window.ShouldClose()) {
+
+        m_timer.Update();
 
         m_input.BeginFrame();
 
@@ -98,20 +101,22 @@ void Application::Run() {
         }
 
         // RENDER
-        m_graphics.Render(m_graphics.GetRenderer().GetDevice(), m_desc);
+        m_graphics.Render(m_graphics.GetRenderer().GetDevice(), m_desc, m_timer.GetDeltaTime());
 
         // PSEUDO - FPS
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float deltaTime = std::chrono::duration<float>(currentTime - lastTime).count();
-        lastTime = currentTime;
+        float deltaTime = m_timer.GetDeltaTime();
         timer += deltaTime;
         frames++;
         if (timer >= 0.5f) {
-            //std::cout << "FPS: " << frames * 2 << std::endl;
             std::string fps = std::to_string(frames * 2);
             SDL_SetWindowTitle(m_window.GetHandle(), fps.c_str());
             frames = 0;
             timer = 0.0f;
+        }
+
+        // HDR ON/OFF
+        if (actions.IsActionPressed(m_input, "HDR")) {
+            m_desc.HDR = !m_desc.HDR;
         }
 
         // HDR EXPOSURE
@@ -125,7 +130,11 @@ void Application::Run() {
                 explosion = true;
             }
         }
-        m_graphics.GetRenderer().UpdateExposure(deltaTime);
+
+        // DITHERING ON/OFF
+        if (actions.IsActionPressed(m_input, "Dithering")) {
+            m_desc.DITHERING = !m_desc.DITHERING;
+        }
 
         // ASPECT RATIO
         if (actions.IsActionPressed(m_input, "Aspect")) {
@@ -240,7 +249,7 @@ void Application::Run() {
 
     }
 
-    m_graphics.Shutdown(m_desc);
+    m_graphics.Shutdown();
     m_window.Destroy();
     SDL_Quit();
 

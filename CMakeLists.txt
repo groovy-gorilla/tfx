@@ -80,6 +80,8 @@ add_executable(TFX main.cpp
         Engine/Graphics/Vulkan/PostProcessPass/VulkanSMAARenderPass.cpp
         Engine/Graphics/Vulkan/PostProcessPass/VulkanSMAARenderPass.h
         Engine/Graphics/Vulkan/Resources/RenderTarget.cpp
+        Engine/Core/Timer.h
+        Engine/Core/Timer.cpp
 )
 
 

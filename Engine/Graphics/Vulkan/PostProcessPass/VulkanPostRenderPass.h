@@ -4,6 +4,12 @@
 
 struct ApplicationDesc;
 
+struct PostPushConstants {
+    int hdrEnable;
+    float exposure;
+    int dithering;
+};
+
 class VulkanPostRenderPass {
 public:
     void Create(

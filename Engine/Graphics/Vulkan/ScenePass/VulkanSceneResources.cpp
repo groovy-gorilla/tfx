@@ -13,22 +13,22 @@ void VulkanSceneResources::Create(VkPhysicalDevice physicalDevice, VkDevice devi
     ssaaExtent.width *= desc.SSAA_SCALE;
     ssaaExtent.height *= desc.SSAA_SCALE;
 
-    VkFormat HDRFormat = VK_FORMAT_R16G16B16A16_SFLOAT;
+
 
     // Scene Color
-    SceneColor.Create(device, physicalDevice, ssaaExtent.width, ssaaExtent.height, HDRFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
+    SceneColor.Create(device, physicalDevice, ssaaExtent.width, ssaaExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // Scene Depth
     SceneDepth.Create(device, physicalDevice, ssaaExtent.width, ssaaExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // MSAA Color
-    MSAAColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, HDRFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, m_samples);
+    MSAAColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, m_samples);
 
     // MSAA Depth
     MSAADepth.Create(device, physicalDevice, internalExtent.width, internalExtent.height, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, m_samples);
 
     // MSAA Resolve Color
-    ResolveColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, HDRFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
+    ResolveColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // SSAA Color
     SSAAColor.Create(device, physicalDevice, internalExtent.width, internalExtent.height, colorFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);

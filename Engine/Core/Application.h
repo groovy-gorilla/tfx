@@ -2,6 +2,7 @@
 
 #include "ApplicationDesc.h"
 #include "Display.h"
+#include "Timer.h"
 #include "Window.h"
 #include "Input/Input.h"
 #include "Input/InputMapping.h"
@@ -23,6 +24,7 @@ private:
     ApplicationDesc m_desc;
     Display m_display;
     Window m_window;
+    Timer m_timer;
     Input m_input;
     SDLInput m_sdlInput;
     InputMapping actions;

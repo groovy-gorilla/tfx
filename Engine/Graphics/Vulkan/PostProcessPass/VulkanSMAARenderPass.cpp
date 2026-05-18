@@ -7,7 +7,7 @@
 #include "ThirdParty/smaa_textures/SearchTex.h"
 #include "Debug/ErrorDialog.h"
 
-void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, RenderTarget& outputColor, ApplicationDesc& desc, VkCommandPool commandPool, VkQueue graphicsQueue) {
+void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, RenderTarget& outputColor, VkFormat blendFormat, ApplicationDesc& desc, VkCommandPool commandPool, VkQueue graphicsQueue) {
 
     m_device = device;
     m_commandPool = commandPool;
@@ -56,7 +56,7 @@ void VulkanSMAARenderPass::Create(VkPhysicalDevice physicalDevice, VkDevice devi
     m_edgeColor.Create(device, physicalDevice, extent.width, extent.height, VK_FORMAT_R8G8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // BLEND TARGET
-    m_blendColor.Create(device, physicalDevice, extent.width, extent.height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
+    m_blendColor.Create(device, physicalDevice, extent.width, extent.height, blendFormat, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, VK_SAMPLE_COUNT_1_BIT);
 
     // EDGE PASS
     CreateEdgeRenderPass(device);

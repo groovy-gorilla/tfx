@@ -6,8 +6,8 @@ enum class AntiAliasing {
     None,
     SMAA,
     MSAA,
-    SSAA,
     MSAA_SMAA,
+    SSAA,
     SSAA_SMAA
 };
 
@@ -21,7 +21,7 @@ struct ApplicationDesc {
     const char* TITLE                   = "TFX";
 
     uint32_t WIDTH                      = 320;
-    uint32_t HEIGHT                     = 240;
+    uint32_t HEIGHT                     = 200;
 
     bool FULLSCREEN                     = false;
     bool ASPECT_RATIO                   = true;
@@ -29,6 +29,12 @@ struct ApplicationDesc {
     TextureFilter FILTER                = TextureFilter::Nearest;
     const uint32_t MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t WINDOWED_SCALE             = 4;                                                    // Rozmiar okna po powiększeniu nie może być większy niż ekran.
+
+    // HDR
+    bool HDR                            = false;
+
+    // DITHERING
+    bool DITHERING                      = false;
 
     // ANTIALIASING
     AntiAliasing AA_MODE                = AntiAliasing::None;
